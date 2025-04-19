@@ -1,5 +1,4 @@
 module com.example.amplify {
-    requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;
 
@@ -9,7 +8,12 @@ module com.example.amplify {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
+    requires com.jfoenix;
+    requires javafx.media;
+    requires jaudiotagger;
+    requires java.desktop;
+    requires java.sql;
 
-    opens com.example.amplify to javafx.fxml;
+    opens com.example.amplify to javafx.fxml, com.jfoenix;
     exports com.example.amplify;
 }
