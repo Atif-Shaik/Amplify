@@ -722,7 +722,7 @@ public class MainSceneController {
             playlistController.setArtist(soundLoader.artist);
             playlistController.setBanner(soundLoader.albumArt);
             playlistController.setListView(tellWhatToDoAddOrRemove);
-            for (Song song: songsShouldBeRemoved) {
+            for (Song song: songsShouldBeRemoved) { // it removes corrupted song from listview
                 playlistController.objectsOfOpendPlaylist.remove(song);
             }
         } else {
@@ -862,9 +862,16 @@ public class MainSceneController {
     } // method ends
 
     public void fullyLoadSong() {
-        filePath = opendPlaylist.get(playlistIndex);
         if (!opendPlaylist.isEmpty()) { // this if checks file existance only if playlist is full
+            filePath = opendPlaylist.get(playlistIndex);
             isExists = playlistController.checkingFileExistance(filePath);
+        }
+        if (opendPlaylist.isEmpty()) { // base case for if playlist becoms empty
+            Title.set("(Song Title)");
+            Artist.set("Artist Name");
+            banner.setImage(art);
+            isSongLoaded = false;
+            return;
         }
         if (isExists) { // base case for recursive function
             isSongLoaded = true;
