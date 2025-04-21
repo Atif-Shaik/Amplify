@@ -11,6 +11,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -24,6 +28,7 @@ import javafx.stage.Stage;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
 
+import java.awt.*;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,7 +36,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 
 public class PlaylistController {
     @FXML
@@ -559,9 +563,36 @@ public class PlaylistController {
         heading1.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
         Text appWork = getText();
-        appWork.setWrappingWidth(380);
+        appWork.setWrappingWidth(360);
 
-        allContent.getChildren().addAll(heading1, appWork);
+        Text heading2 = new Text("Contact with us");
+        heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
+
+        Text sub1 = new Text("Email:");
+        sub1.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-underline: true; ");
+
+        Hyperlink emailLink = new Hyperlink("Email: atifshaik78692@gmail.com");
+        emailLink.setOnAction(e -> openLinks("mailto:atifshaik78692@gmail.com"));
+        emailLink.setStyle("-fx-font-size: 18px;");
+
+        Text heading3 = new Text("Resources Attribution");
+        heading3.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
+
+        Text subHeading1 = new Text("The original creators and copyright holders are acknowledged and appreciated.");
+        subHeading1.setStyle("-fx-font-size: 18px;");
+        subHeading1.setWrappingWidth(360);
+
+        Hyperlink freepik = new Hyperlink("www.freepik.com");
+        freepik.setOnAction(e -> openLinks("https://www.freepik.com"));
+        freepik.setStyle("-fx-font-size: 18px;");
+
+        Text heading4 = new Text("App version");
+        heading4.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
+
+        Text version = new Text("1.0");
+        version.setStyle("-fx-font-size: 18px;");
+
+        allContent.getChildren().addAll(heading1, appWork, heading2, emailLink, heading3, subHeading1, freepik, heading4, version);
 
         ScrollPane scrollPane = new ScrollPane(allContent);
         scrollPane.setPrefSize(400,400);
@@ -572,8 +603,21 @@ public class PlaylistController {
         infoDialog.showAndWait();
     } // method ends
 
+    // this method opens links pressed by users
+    public void openLinks(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.initOwner(mainStage);
+            alert.setHeaderText(null);
+            alert.setContentText("Unable to open browser!");
+            alert.showAndWait();
+        }
+    } // method ends
+
     private static Text getText() {
-        Text appWork = new Text("This application facilitates local audio playback by directly accessing files stored on the user's device. It's crucial to understand that the application relies on the file's original path for playback and playlist management. Therefore, any modifications to the audio file's location, such as renaming or moving it, or its deletion, will render it inaccessible to the application. Consequently, the affected song will be automatically removed from the playlist. To ensure uninterrupted playback and maintain playlist integrity, users are advised to store audio files in a designated, stable directory prior to importing them into the application.");
+        Text appWork = new Text("This application facilitates local audio \nplayback by directly accessing files stored on the user's device. It's crucial to understand that the application relies on the file's original path for playback and playlist management. Therefore, any modifications to the audio file's location, such as renaming or moving it, or its deletion, will render it inaccessible to the application. Consequently, the affected song will be automatically removed from the playlist. To ensure uninterrupted playback and maintain playlist integrity, users are advised to store audio files in a designated, stable directory prior to importing them into the application.");
         appWork.setStyle("-fx-font-size: 18px; -fx-padding: 5px 0;");
         return appWork;
     } // method ends
