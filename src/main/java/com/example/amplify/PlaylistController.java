@@ -1,9 +1,6 @@
 package com.example.amplify;
 
-import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXComboBox;
-import com.jfoenix.controls.JFXListCell;
-import com.jfoenix.controls.JFXListView;
+import com.jfoenix.controls.*;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -19,6 +16,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
@@ -69,8 +67,8 @@ public class PlaylistController {
     Stage mainStage;
     Scene mainScene;
 
-    ImageView backIcon, miniPlay, miniPause, infoIcon;
-
+    ImageView backIcon, miniPlay, miniPause, infoIcon, insta, linkedin, github;
+    HBox socialmediaHolder;
     public void initialize() {
         soundLoader = new SoundLoader();
         fileChooser = new FileChooser();
@@ -158,6 +156,29 @@ public class PlaylistController {
 
         Tooltip listViewTip = new Tooltip("Press \"Ctrl + Delete\" to delete song");
         listView.setTooltip(listViewTip);
+
+        // preparing social media links
+        insta = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/instagram.png"))));
+        insta.setStyle("-fx-cursor: hand;");
+        linkedin = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/linkedin.png"))));
+        linkedin.setStyle("-fx-cursor: hand;");
+        github = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/github.png"))));
+        github.setStyle("-fx-cursor: hand;");
+
+        JFXRippler instagramLink = new JFXRippler(insta);
+        JFXRippler linkedinLink = new JFXRippler(linkedin);
+        JFXRippler githubLink = new JFXRippler(github);
+
+        instagramLink.setRipplerFill(Color.GRAY);
+        instagramLink.setOnMouseClicked(e -> openLinks("https://www.instagram.com/atif_sk_92"));
+
+        linkedinLink.setRipplerFill(Color.GRAY);
+        linkedinLink.setOnMouseClicked(e -> openLinks("https://www.linkedin.com/in/shaik-atif-05a965355"));
+
+        githubLink.setRipplerFill(Color.GRAY);
+        githubLink.setOnMouseClicked(e -> openLinks("https://www.github.com/Atif-Shaik"));
+
+        socialmediaHolder = new HBox(10, instagramLink, linkedinLink, githubLink);
 
     } // initialize method ends here
 /************************************************************************************************************************/
@@ -566,34 +587,41 @@ public class PlaylistController {
         Text appWork = getText();
         appWork.setWrappingWidth(360);
 
-        Text heading2 = new Text("Contact with us");
+        Text heading2 = new Text("Bug and Glitch Reporting");
         heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
-        Text sub1 = new Text("Email:");
-        sub1.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-underline: true; ");
+        Text reportText = new Text("Please report any bugs or glitches you encounter while using the application. Your feedback is valuable in helping us improve its performance and stability.");
+        reportText.setWrappingWidth(370);
+        reportText.setStyle("-fx-font-size: 18px;");
 
         Hyperlink emailLink = new Hyperlink("Email: atifshaik78692@gmail.com");
         emailLink.setOnAction(e -> openLinks("mailto:atifshaik78692@gmail.com"));
         emailLink.setStyle("-fx-font-size: 18px;");
 
-        Text heading3 = new Text("Resources Attribution");
+        Text heading3 = new Text("Follow us");
         heading3.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
-        Text subHeading1 = new Text("The original creators and copyright holders are acknowledged and appreciated.");
+        Text heading4 = new Text("Resources Attribution");
+        heading4.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
+
+        Text subHeading1 = new Text("This app uses icons from Freepik.");
         subHeading1.setStyle("-fx-font-size: 18px;");
-        subHeading1.setWrappingWidth(360);
+
+        Text subHeading2 = new Text("The original creators and copyright holders are acknowledged and appreciated.");
+        subHeading2.setStyle("-fx-font-size: 18px;");
+        subHeading2.setWrappingWidth(360);
 
         Hyperlink freepik = new Hyperlink("www.freepik.com");
         freepik.setOnAction(e -> openLinks("https://www.freepik.com"));
         freepik.setStyle("-fx-font-size: 18px;");
 
-        Text heading4 = new Text("App version");
-        heading4.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
+        Text heading5 = new Text("App version");
+        heading5.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
 
         Text version = new Text("1.0");
         version.setStyle("-fx-font-size: 18px;");
 
-        allContent.getChildren().addAll(heading1, appWork, heading2, emailLink, heading3, subHeading1, freepik, heading4, version);
+        allContent.getChildren().addAll(heading1, appWork, heading2, reportText, emailLink, heading3, socialmediaHolder, heading4, subHeading1, subHeading2, freepik, heading5, version);
 
         ScrollPane scrollPane = new ScrollPane(allContent);
         scrollPane.setPrefSize(400,400);
