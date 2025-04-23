@@ -749,22 +749,26 @@ public class MainSceneController {
                 checkLikedSong();
                 soundLoader.mediaPlayer.setOnReady(this::calculateAndSetLength);
                 invokeMedia();
+
+                if (isShuffled) { // turnig shuffle to off
+                    shuffle.setSelected(false);
+                    isShuffled = false;
+                } // if ends
+
+                // this if unloads the selected playlist
+                if (playlistController!= null && playlistController.isPlaylistLoaded) {
+                    // setting combobox to null as no playlist is selected
+                    playlistController.playlists.getSelectionModel().clearSelection();
+                    playlistController.playlists.setValue(null);
+                    playlistController.objectsOfOpendPlaylist.clear(); // removing all songs from listview
+                    opendPlaylist.clear(); // removing opendplaylist songs
+                    playlistController.loadedPlaylist = "Empty";
+                    playlistController.isPlaylistLoaded = false;
+                } // if ends
+
             } // inner if ends
-        } // if ends
-        // this if unloads the selected playlist
-        if (playlistController!= null && playlistController.isPlaylistLoaded) {
-            // setting combobox to null
-            playlistController.playlists.getSelectionModel().clearSelection();
-            playlistController.playlists.setValue(null);
-            playlistController.objectsOfOpendPlaylist.clear(); // removing all songs from listview
-            opendPlaylist.clear();
-            playlistController.loadedPlaylist = "Empty";
-            playlistController.isPlaylistLoaded = false;
-        } // if ends
-        if (isShuffled) {
-            shuffle.setSelected(false);
-            isShuffled = false;
-        }
+        } // main if ends
+
     } // method ends here
 
     // method for extracting metadata
