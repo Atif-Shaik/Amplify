@@ -41,9 +41,6 @@ build/
 ### class ###
 *.class
 
-### ignore database ###
-DataBase/
-
 ### ignore icons ###
 icons/
 
