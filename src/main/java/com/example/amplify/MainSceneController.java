@@ -67,7 +67,7 @@ public class MainSceneController {
     Label volumePercent;
 
     Random random;
-    String url = "jdbc:sqlite:src/main/resources/DataBase/appdata.db";
+    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
     String filePath;
     String lastRemovedLikedSong;
     private boolean isSceneCreated = false;
@@ -581,7 +581,7 @@ public class MainSceneController {
                 playlistController = loader.getController();
                 playlistController.setStage(mainStage); // sending stage reference only one time
                 playlistController.setScene(mainScene); // sending scene reference only one time
-                playlistController.setController(this);
+                playlistController.setController(this); // sending main scene controller referance
                 // activating playlist scene
                 mainStage.setScene(playlistScene);
                 mainStage.show();
@@ -676,7 +676,9 @@ public class MainSceneController {
                     } // if for deleting song in playlist via key event
                 }); // event handler ends here
             } catch (Exception e) {
-                System.out.println(e);
+                System.out.println("Failed to load playlist scene");
+                System.out.println(e.fillInStackTrace());
+                throw  new RuntimeException(e);
             }
         } else {
             mainStage.setScene(playlistScene);

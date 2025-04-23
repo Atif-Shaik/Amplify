@@ -1,12 +1,13 @@
 package com.example.amplify;
 
+import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class DeleteFilePaths extends Thread{
     ArrayList<String> arrayList;
-    String url = "jdbc:sqlite:src/main/resources/DataBase/appdata.db";
+    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
     String playlist;
 
     public DeleteFilePaths(ArrayList<String> arrayList, String playlist) {
@@ -15,6 +16,7 @@ public class DeleteFilePaths extends Thread{
     }
 
     public void run() {
+
         try (Connection connection = DriverManager.getConnection(url)){
             String sql = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
             PreparedStatement preparedStatement = connection.prepareStatement(sql);

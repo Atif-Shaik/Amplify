@@ -56,7 +56,7 @@ public class PlaylistController {
     MainSceneController mainSceneController;
     FileChooser fileChooser;
     SoundLoader soundLoader;
-    String url = "jdbc:sqlite:src/main/resources/DataBase/appdata.db";
+    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
     SimpleStringProperty Title, Artist;
     public boolean isPlaying, isSongLoaded, isPaused;
     public boolean helperForPlayPause;
@@ -478,6 +478,7 @@ public class PlaylistController {
             } // loop
 
         } catch (SQLException e) {
+            System.out.println(url);
             throw new RuntimeException(e);
         }
     } // method ends

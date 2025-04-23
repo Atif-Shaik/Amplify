@@ -1,5 +1,6 @@
 package com.example.amplify;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.LogManager;
@@ -18,7 +19,7 @@ import java.sql.*;
 import java.util.Objects;
 
 public class Main extends Application {
-    static String url = "jdbc:sqlite:src/main/resources/DataBase/appdata.db";
+    static String url;
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -40,8 +41,10 @@ public class Main extends Application {
         stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/logo.png"))));
         stage.setTitle("Amplify");
         stage.show();
-        createDatabaseIfNotExists(stage);
-        addLikedlistToPlaylistTable();
+
+        createDatabaseIfNotExists(stage); // creating sqlite database
+        addLikedlistToPlaylistTable(); // adding lined songs table name to all playlist names table
+
         // adding closing confirmation
         stage.setOnCloseRequest(event -> {
             boolean userConfirmation = getConfirmation(stage);
@@ -84,6 +87,14 @@ public class Main extends Application {
     } // method ends
 
     public static void createDatabaseIfNotExists(Stage stage) {
+        String userDir = System.getProperty("user.home") + File.separator + ".amplifydata"; // creating a user writable directory in the home place of user
+        File dir = new File(userDir);
+
+        if (!dir.exists()) dir.mkdirs(); // this line creates database folder for the first time
+
+        String dbPath = userDir + File.separator + "appdata.db";
+        url = "jdbc:sqlite:" + dbPath; // full path of writable database
+
         try (Connection connection = DriverManager.getConnection(url)){
             // crating a table for all playlist names
             String sql1 = "CREATE TABLE IF NOT EXISTS all_playlists (" +
@@ -92,19 +103,13 @@ public class Main extends Application {
             String sql2 = "CREATE TABLE IF NOT EXISTS liked_songs (" +
                     "file_paths TEXT NOT NULL UNIQUE);";
             String at = "liked_songs";
-
             Statement statement = connection.createStatement();
             statement.execute(sql1);
             statement.execute(sql2);
         } catch (SQLException e) {
-            Alert alertError;
-            alertError = new Alert(Alert.AlertType.ERROR);
-            stage.initOwner(stage);
-            alertError.setTitle("SQLite Database");
-            alertError.setHeaderText("Failed to connect to SQLite");
-            alertError.setContentText("Please contact us!");
-            alertError.showAndWait();
-            System.out.println("Failed to connect to SQLite " + e.getMessage());
+            System.out.println(url);
+            System.out.println("Failed to connect with database");
+            throw new RuntimeException(e);
         } // catch
     } // method ends
 
