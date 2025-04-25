@@ -57,7 +57,7 @@ public class MainSceneController {
     Stage mainStage;
     Scene mainScene, playlistScene;
     PlaylistController playlistController;
-    ImageView play, back, fast, add, list, pause, speaker, volumeIcon, mute, like, dislike;
+    ImageView play, back, fast, add, list, pause, speaker, no_speaker, volumeIcon, mute, like, dislike;
     Image art;
     LinkedList<String> opendPlaylist;
     LinkedList<String> likedList;
@@ -88,6 +88,7 @@ public class MainSceneController {
     boolean letItUpdateInlistviewListener = true;
     Song removedSongObject;
     String tellWhatToDoAddOrRemove;
+    PauseTransition delay;
 
     ArrayList<String> erroredSong;
     ArrayList<Song> songsShouldBeRemoved;
@@ -116,6 +117,8 @@ public class MainSceneController {
         volumeButton = new JFXButton();
         // initializing random
         random = new Random();
+        // initialiazing delay
+        delay = new PauseTransition(Duration.seconds(3));
 
         fileChooser.setTitle("Select an audio file");
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Audio Files","*.mp3", "*.wav", "*.aac"));
@@ -129,6 +132,7 @@ public class MainSceneController {
         add = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/add.png"))));
         list = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/playlist.png"))));
         speaker = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/speaker.png"))));
+        no_speaker = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/no_speaker.png"))));
         volumeIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/volumeIcon.png"))));
         mute = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/mute.png"))));
         like = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/like.png"))));
@@ -216,10 +220,14 @@ public class MainSceneController {
         }); // shuffle listener ends
         volume.setOnAction(event -> showVolumePane());
         volumeSlider.setOnMouseReleased(event -> setMuteViaVolumeSlider());
+        volumeSlider.setOnMouseDragged(event -> {delay.stop();}); // this stops the closing countdown if user is interacting with volume slider
         volumeButton.setOnAction(event -> volumeButtonController());
         likeAndDislike.setOnAction(event -> likeAndDiskikeController());
         backward.setOnAction(event -> backwardButton());
         forward.setOnAction(event -> forwardButton());
+        delay.setOnFinished(event -> {
+            popup.hide(); // hiding popup after 3 seconds
+        });
 
         // binding label with simple string property
         Title = new SimpleStringProperty("(Song Title)");
@@ -456,19 +464,18 @@ public class MainSceneController {
         double value = volumeSlider.getValue();
         if (value == 0) {
            volumeButton.setGraphic(mute);
+           volume.setGraphic(no_speaker);
         } else if (value > 0) {
             volumeButton.setGraphic(volumeIcon);
+            volume.setGraphic(speaker);
         } // if ends
-        PauseTransition delay = new PauseTransition(Duration.seconds(3));
-        delay.setOnFinished(e -> {
-            popup.hide();
-        });
-        delay.play();
+        delay.play(); // this will close popup after 3 seconds
     } // method ends
 
     // method for volume
     public void showVolumePane() {
         popup.show(volume, JFXPopup.PopupVPosition.TOP, JFXPopup.PopupHPosition.LEFT);
+        delay.play(); // this will close the popup after 3 seconds if not interacted
     } // method ends
 
     // this method resets live counting of seconds and sets to default
