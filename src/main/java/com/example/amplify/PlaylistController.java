@@ -123,6 +123,7 @@ public class PlaylistController {
                         listView.getSelectionModel().select(mainSceneController.playlistIndex);
                     }
                 } // if ends
+
                 mainSceneController.letItPlay = false;
                 mainSceneController.dontReplay = true; // this line ensures that all other selected songs should be loaded
             } // if ends
@@ -544,13 +545,21 @@ public class PlaylistController {
     public void setListView(String action) {
         if (mainSceneController.updateListview) {
             if (action.equals("Add")) {
+                if (mainSceneController.clearAllRemovedSongs && !mainSceneController.removedSongIndex.isEmpty()) {
+                    for (Integer i : mainSceneController.removedSongIndex) {
+                        objectsOfOpendPlaylist.remove(i.intValue());
+                    }
+                }
+                mainSceneController.dontReplay = false;
                 objectsOfOpendPlaylist.add(mainSceneController.removedSongObject);
                 listView.getSelectionModel().select(mainSceneController.removedSongObject);
+                mainSceneController.playlistIndex = objectsOfOpendPlaylist.indexOf(mainSceneController.removedSongObject);
             } else if (action.equals("Remove")) {
                 objectsOfOpendPlaylist.remove(mainSceneController.removedSongObject);
                 listView.getSelectionModel().select(null);
             }
             mainSceneController.updateListview = false;
+            mainSceneController.removedSongIndex.clear(); // clearing
         }
     } // ends
 
@@ -598,7 +607,7 @@ public class PlaylistController {
         emailLink.setOnAction(e -> openLinks("mailto:atifshaik78692@gmail.com"));
         emailLink.setStyle("-fx-font-size: 18px;");
 
-        Text heading3 = new Text("Follow us");
+        Text heading3 = new Text("Follow the developer");
         heading3.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
         Text heading4 = new Text("Resources Attribution");
@@ -618,7 +627,7 @@ public class PlaylistController {
         Text heading5 = new Text("App version");
         heading5.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
 
-        Text version = new Text("1.0");
+        Text version = new Text("1.0.0");
         version.setStyle("-fx-font-size: 18px;");
 
         allContent.getChildren().addAll(heading1, appWork, heading2, reportText, emailLink, heading3, socialmediaHolder, heading4, subHeading1, subHeading2, freepik, heading5, version);

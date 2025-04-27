@@ -44,6 +44,7 @@ public class MainSceneController {
     JFXButton volumeButton;
 
     int lastIndex = 0;
+    ArrayList<Integer> removedSongIndex;
     int playlistIndex = 0;
     int countLiveSeconds = 0; // the count veriable counts the real time
     int i;
@@ -86,6 +87,7 @@ public class MainSceneController {
     boolean isMainSceneOn = true;
     boolean isExists = true;
     boolean letItUpdateInlistviewListener = true;
+    boolean clearAllRemovedSongs = false;
     Song removedSongObject;
     String tellWhatToDoAddOrRemove;
     PauseTransition delay;
@@ -104,6 +106,8 @@ public class MainSceneController {
         // initializing linkedLists
         opendPlaylist = new LinkedList<>();
         likedList = new LinkedList<>();
+        // initializing arraylist
+        removedSongIndex = new ArrayList<>();
         erroredSong = new ArrayList<>();
         songsShouldBeRemoved = new ArrayList<>();
         // initializing vbox
@@ -228,6 +232,7 @@ public class MainSceneController {
         delay.setOnFinished(event -> {
             popup.hide(); // hiding popup after 3 seconds
         });
+        volumeButton.setOnMouseClicked(event -> {delay.stop();delay.play();});
 
         // binding label with simple string property
         Title = new SimpleStringProperty("(Song Title)");
@@ -387,6 +392,7 @@ public class MainSceneController {
                         removedSongObject = song;
                         updateListview = true;
                         tellWhatToDoAddOrRemove = "Add";
+                        clearAllRemovedSongs = true;
                         opendPlaylist.add(filePath);
                         if (lastRemovedLikedSong.equals(filePath)) { // this if does not let the reload the song
                             dontReplay = false;
@@ -423,9 +429,11 @@ public class MainSceneController {
                             updateListview = true;
                             removedSongObject = file;
                             tellWhatToDoAddOrRemove = "Remove";
+                            clearAllRemovedSongs = false;
                             if (file.filepath.equals(filePath)) {
                                 likedList.remove(filePath);
                                 opendPlaylist.remove(filePath);
+                                removedSongIndex.add(playlistController.objectsOfOpendPlaylist.indexOf(file)); // getting index of song to remove it from listview
                                 lastRemovedLikedSong = filePath;
                                 break;
                             }
@@ -450,11 +458,13 @@ public class MainSceneController {
         if (!isVolumeButtonPressed) {
             isVolumeButtonPressed = true;
             volumeButton.setGraphic(mute);
+            volume.setGraphic(no_speaker);
             volumeSlider.setValue(0);
         } // outer if
         else if (isVolumeButtonPressed) {
             isVolumeButtonPressed = false;
             volumeButton.setGraphic(volumeIcon);
+            volume.setGraphic(speaker);
             volumeSlider.setValue(0.5);
         } // if ends
     } // method ends here
