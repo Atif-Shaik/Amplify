@@ -587,10 +587,10 @@ public class PlaylistController {
 
     public void showInfo() {
         Dialog<Void> infoDialog = new Dialog<>();
-        infoDialog.setTitle("About Amplify");
+        infoDialog.setTitle("About Amplify-Music");
 
         VBox allContent = new VBox(10);
-        Text heading1 = new Text("How Amplify works?");
+        Text heading1 = new Text("How Amplify-Music works?");
         heading1.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
         Text appWork = getText();
@@ -627,7 +627,7 @@ public class PlaylistController {
         Text heading5 = new Text("App version");
         heading5.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
 
-        Text version = new Text("1.0.0");
+        Text version = new Text("1.0.0.0");
         version.setStyle("-fx-font-size: 18px;");
 
         allContent.getChildren().addAll(heading1, appWork, heading2, reportText, emailLink, heading3, socialmediaHolder, heading4, subHeading1, subHeading2, freepik, heading5, version);

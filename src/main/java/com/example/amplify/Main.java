@@ -39,7 +39,7 @@ public class Main extends Application {
         stage.setScene(mainScene);
         stage.setResizable(false);
         stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/logo.png"))));
-        stage.setTitle("Amplify");
+        stage.setTitle("Amplify-Music");
         stage.show();
 
         createDatabaseIfNotExists(stage); // creating sqlite database
