@@ -28,8 +28,13 @@ import com.example.sound.SoundLoader;
 
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -54,7 +59,7 @@ public class PlaylistController {
     MainSceneController mainSceneController;
     FileChooser fileChooser;
     SoundLoader soundLoader;
-    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     SimpleStringProperty Title, Artist;
     public boolean isPlaying, isSongLoaded, isPaused;
     public boolean helperForPlayPause;
@@ -190,29 +195,42 @@ public class PlaylistController {
             if (selectedFile != null) {
                 String fileName = selectedFile.getName().toLowerCase(Locale.ROOT); // converting into string for if statement checking
                 if (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".asc")) {
-                    String filePath = selectedFile.toURI().toString();
-                    boolean isFileExists = addSongsToTable(filePath);
-                    if (isFileExists) { // this if block is for when the selected song is already in database
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.initOwner(mainStage);
-                        alert.setTitle("Error");
-                        alert.setHeaderText("This song is already in your playlist");
-                        alert.setContentText("Please choose a different song");
-                        alert.showAndWait();
-                    } else { // this else block add file path to database
-                        soundLoader.openSong(filePath);
-                        Song song = new Song(soundLoader.albumArt, filePath, soundLoader.title, soundLoader.artist);
-                        objectsOfOpendPlaylist.add(song); // adding new song to listview
-                        mainSceneController.opendPlaylist.add(filePath); // adding new song to opened playlist
+                    String filePath;
+                    try {
+                        String musicFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Music";
+                        Path targetFolderPath = Paths.get(musicFolder); // getting the path of music folder
+                        Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied song
+                        Path sourcePath = selectedFile.toPath(); // getting the path of the selected song
 
-                        String selection = playlists.getValue(); // this is for adding song to liked list
+                        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the song in app sandbox
+                        filePath = targetPath.toUri().toString();
 
-                        if (selection.equals("LIKED SONGS")) { // this if adds song to liked list data abd sets liked icon to like button
-                            mainSceneController.likedList.add(filePath);
-                            mainSceneController.isLiked = true;
-                            mainSceneController.likeAndDislike.setGraphic(mainSceneController.like);
-                        } // end
-                    } // else ends
+                        boolean isFileExists = addSongsToTable(filePath);
+                        if (isFileExists) { // this if block is for when the selected song is already in database
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.initOwner(mainStage);
+                            alert.setTitle("Error");
+                            alert.setHeaderText("This song is already in your playlist");
+                            alert.setContentText("Please choose a different song");
+                            alert.showAndWait();
+                        } else { // this else block add audio to all places
+                            mainSceneController.dontReplay = true; // this ensures that song can be loaded when clicked
+                            soundLoader.openSong(filePath);
+                            Song song = new Song(soundLoader.albumArt, filePath, soundLoader.title, soundLoader.artist);
+                            objectsOfOpendPlaylist.add(song); // adding new song to listview
+                            mainSceneController.opendPlaylist.add(filePath); // adding new song to opened playlist
+
+                            String selection = playlists.getValue(); // this is for adding song to liked list
+
+                            if (selection.equals("LIKED SONGS")) { // this if adds song to liked list data abd sets liked icon to like button
+                                mainSceneController.likedList.add(filePath);
+                                mainSceneController.isLiked = true;
+                                mainSceneController.likeAndDislike.setGraphic(mainSceneController.like);
+                            } // end
+                        } // else ends
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 } // if ends
             } // if ends
         } else { // this else block gets executed when a playlist is not loaded
@@ -342,23 +360,16 @@ public class PlaylistController {
                 if (selection.equals("LIKED SONGS")) { // this if loads liked songs playlist in listview
                     loadSongsForListView("liked_songs"); // loading playlist
                     loadedPlaylist = "LIKED SONGS";
+                    showEmptyPlaylistMessage();
                 } else { // this else loads other playlists in listview
                     loadedPlaylist = selection; // adding loaded playlist name (all caps)
                     selection = selection.replace(" ", "_");
                     selection = selection.toLowerCase();
                     loadSongsForListView(selection); // loading new playlist
-                    if (objectsOfOpendPlaylist.isEmpty()) { // checks for empty playlist
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setTitle("Error");
-                        alert.initOwner(mainStage);
-                        alert.setHeaderText("The current playlist is empty");
-                        alert.setContentText("Please add songs to begin playback");
-                        alert.showAndWait();
-                    }
+                    showEmptyPlaylistMessage();
                 } // else if ends here
 
                 if (invalidSongPath > 0) { // if for displaying removed songs
-
                     Alert alert = new Alert(Alert.AlertType.WARNING);
                     alert.setTitle("Warning");
                     alert.initOwner(mainStage);
@@ -383,6 +394,17 @@ public class PlaylistController {
             mainSceneController.playlistIndex = 0; // setting index to 0 for default
             mainSceneController.fullyLoadSong(); // loading first song after playlist selection
         } // else block ends here
+    } // method ends
+
+    public void showEmptyPlaylistMessage() {
+        if (objectsOfOpendPlaylist.isEmpty()) { // checks for empty playlist
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.initOwner(mainStage);
+            alert.setHeaderText("The current playlist is empty");
+            alert.setContentText("Please add songs to begin playback");
+            alert.showAndWait();
+        }
     } // method ends
 
     public void loadSongsForListView(String name) {

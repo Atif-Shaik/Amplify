@@ -68,7 +68,7 @@ public class MainSceneController {
     Label volumePercent;
 
     Random random;
-    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     String filePath;
     String lastRemovedLikedSong;
     private boolean isSceneCreated = false;

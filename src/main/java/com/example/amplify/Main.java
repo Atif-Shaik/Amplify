@@ -3,6 +3,9 @@ package com.example.amplify;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.logging.LogManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -87,13 +90,20 @@ public class Main extends Application {
     } // method ends
 
     public static void createDatabaseIfNotExists(Stage stage) {
-        String userDir = System.getProperty("user.home") + File.separator + ".amplifydata"; // creating a user writable directory in the home place of user
-        File dir = new File(userDir);
+        String userDir = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
+        if (userDir != null) {
+            System.out.println(userDir);
+        }
 
-        if (!dir.exists()) dir.mkdirs(); // this line creates database folder for the first time
+        try {
+            Path musicDirectory = Paths.get(userDir, "Music");
+            Files.createDirectories(musicDirectory);
 
-        String dbPath = userDir + File.separator + "appdata.db";
-        url = "jdbc:sqlite:" + dbPath; // full path of writable database
+            String dbPath = userDir + File.separator + "appdata.db";
+            url = "jdbc:sqlite:" + dbPath; // full path of writable database
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         try (Connection connection = DriverManager.getConnection(url)){
             // crating a table for all playlist names
