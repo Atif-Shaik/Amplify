@@ -589,11 +589,11 @@ public class MainSceneController {
             isSceneCreated = true;
             try {
                 // creating playlist scene
-                FXMLLoader loader = new FXMLLoader(MainSceneController.class.getResource("PlaylistScene.fxml"));
+                FXMLLoader loader = new FXMLLoader(MainSceneController.class.getResource("/com/example/amplify/PlaylistScene.fxml"));
                 Parent root = loader.load();
                 playlistScene = new Scene(root, 500, 600);
                 root.requestFocus(); // requesting focus for key events
-                playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("PlaylistScene.css")));
+                playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/PlaylistScene.css")));
                 // loading playlist controller
                 playlistController = loader.getController();
                 playlistController.setStage(mainStage); // sending stage reference only one time

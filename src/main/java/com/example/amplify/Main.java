@@ -24,11 +24,11 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         // FXML load section
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("MainScene.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("/com/example/amplify/MainScene.fxml"));
         Parent root = loader.load();
         Scene mainScene = new Scene(root, 500,600);
         root.requestFocus(); // requesting focus for key events
-        mainScene.getStylesheets().add(String.valueOf(getClass().getResource("mainScene.css")));
+        mainScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/mainScene.css")));
         // loading the controller class
         MainSceneController mainSceneController = loader.getController();
         // sending stage and scene reference to controller class
