@@ -24,6 +24,12 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 
@@ -710,15 +716,20 @@ public class MainSceneController {
         try (Connection connection = DriverManager.getConnection(url)){
             playlist = playlist.toLowerCase();
             playlist = playlist.replace(" ", "_");
-            String sql = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, songPath);
-            preparedStatement.executeUpdate();
+            String sql1 = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
+            String sql2 = "INSERT INTO deleted_songs (file_paths)" +
+                    "VALUES (?);";
+            PreparedStatement preparedStatement1 = connection.prepareStatement(sql1);
+            preparedStatement1.setString(1, songPath);
+            preparedStatement1.executeUpdate();
+
+            PreparedStatement preparedStatement2 = connection.prepareStatement(sql2);
+            preparedStatement2.setString(1, songPath);
+            preparedStatement2.executeUpdate();
 
         } catch (SQLException sqlException) {
             System.out.println("Error " + sqlException.getMessage());
         }
-
     } // method ends
 
     // this method gets user confirmation before deleting

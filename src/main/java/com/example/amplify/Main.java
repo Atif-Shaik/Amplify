@@ -46,6 +46,10 @@ public class Main extends Application {
         stage.show();
 
         createDatabaseIfNotExists(stage); // creating sqlite database
+
+        DeleteSongs deleteSongs = new DeleteSongs(); // creating thread object
+        deleteSongs.start(); // starting the thread to deleted song from Music folder
+
         addLikedlistToPlaylistTable(); // adding lined songs table name to all playlist names table
 
         // adding closing confirmation
@@ -112,10 +116,14 @@ public class Main extends Application {
             // creating liked song table
             String sql2 = "CREATE TABLE IF NOT EXISTS liked_songs (" +
                     "file_paths TEXT NOT NULL UNIQUE);";
-            String at = "liked_songs";
+            // creating table for deleted songs
+            String sql3 = "CREATE TABLE IF NOT EXISTS deleted_songs (" +
+                    "file_paths TEXT NOT NULL UNIQUE);";
+
             Statement statement = connection.createStatement();
             statement.execute(sql1);
             statement.execute(sql2);
+            statement.execute(sql3);
         } catch (SQLException e) {
             System.out.println(url);
             System.out.println("Failed to connect with database");

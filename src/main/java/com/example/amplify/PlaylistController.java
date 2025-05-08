@@ -120,6 +120,7 @@ public class PlaylistController {
                         Title.set(newValue.title); // setting mini title
                         Artist.set(newValue.artist); // setting mini artist name
                         miniBanner.setImage(newValue.art); // setting mini banner
+
                     } else { // when the song is corrupted this will load the next song in playlist to mini bar
                         Title.set(mainSceneController.soundLoader.title);
                         Artist.set(mainSceneController.soundLoader.artist);
@@ -202,7 +203,11 @@ public class PlaylistController {
                         Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied song
                         Path sourcePath = selectedFile.toPath(); // getting the path of the selected song
 
-                        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the song in app sandbox
+                        // this section checks if song is already in the Music folder
+                        String str = targetPath.toString();
+                        File file = new File(str);
+                        if (!file.exists()) Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the song in app sandbox
+
                         filePath = targetPath.toUri().toString();
 
                         boolean isFileExists = addSongsToTable(filePath);
