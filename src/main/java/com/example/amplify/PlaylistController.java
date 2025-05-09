@@ -198,7 +198,8 @@ public class PlaylistController {
                 if (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".asc")) {
                     String filePath;
                     try {
-                        String musicFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Music";
+                        String musicFolder = System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "Music";
+
                         Path targetFolderPath = Paths.get(musicFolder); // getting the path of music folder
                         Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied song
                         Path sourcePath = selectedFile.toPath(); // getting the path of the selected song
