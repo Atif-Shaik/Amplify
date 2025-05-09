@@ -49,7 +49,7 @@ public class MainSceneController {
     JFXButton volumeButton;
 
     int lastIndex = 0;
-    ArrayList<Integer> removedSongIndex;
+    LinkedHashSet<Integer> removedSongIndex;
     int playlistIndex = 0;
     int countLiveSeconds = 0; // the count veriable counts the real time
     int i;
@@ -112,7 +112,7 @@ public class MainSceneController {
         opendPlaylist = new LinkedList<>();
         likedList = new LinkedList<>();
         // initializing arraylist
-        removedSongIndex = new ArrayList<>();
+        removedSongIndex = new LinkedHashSet<>();
         erroredSong = new ArrayList<>();
         songsShouldBeRemoved = new ArrayList<>();
         // initializing vbox
