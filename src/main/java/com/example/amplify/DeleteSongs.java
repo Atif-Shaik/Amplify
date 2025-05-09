@@ -16,8 +16,12 @@ public class DeleteSongs extends Thread {
         try (Connection connection = DriverManager.getConnection(url)){
            String sql1 = "SELECT file_paths FROM deleted_songs;";
            String sql2 = "DELETE FROM deleted_songs;";
+
            Statement statement1 = connection.createStatement();
+           Statement statement2 = connection.createStatement();
+
            ResultSet resultSet = statement1.executeQuery(sql1);
+           statement2.execute(sql2); // clearing the table after all songs are deleted
 
             while (resultSet.next()) {
                 URI uri = new URI(resultSet.getString("file_paths")); // converting filepath to URI
@@ -28,10 +32,6 @@ public class DeleteSongs extends Thread {
                     System.out.println(path);
                 }
             } // loop ends
-
-            Statement statement2 = connection.createStatement();
-            statement2.execute(sql2); // clearing the table after all songs are deleted
-
         } catch (SQLException | URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }
