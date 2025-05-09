@@ -3,6 +3,8 @@ package com.example.amplify;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -94,20 +96,22 @@ public class Main extends Application {
     } // method ends
 
     public static void createDatabaseIfNotExists(Stage stage) {
-        String userDir = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
-        if (userDir != null) {
-            System.out.println(userDir);
-        }
+        String userDir = System.getProperty("user.dir") + File.separator + "AmplifyMusic";
 
-        try {
-            Path musicDirectory = Paths.get(userDir, "Music");
-            Files.createDirectories(musicDirectory);
+        String basePath = System.getProperty("user.dir");
+        File amplifyMusicdir = new File(basePath, "AmplifyMusic");
 
-            String dbPath = userDir + File.separator + "appdata.db";
-            url = "jdbc:sqlite:" + dbPath; // full path of writable database
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        if (!amplifyMusicdir.exists()) {
+            boolean created = amplifyMusicdir.mkdirs();
+            String amplifyMusicdirPath = System.getProperty("user.dir") + File.separator + "AmplifyMusic";
+            File musicdir = new File(amplifyMusicdirPath, "Music");
+            if (!musicdir.exists()) {
+                boolean created1 = musicdir.mkdirs();
+            }
+        } // if ends
+
+        String dbPath = userDir + File.separator + "appdata.db";
+        url = "jdbc:sqlite:" + dbPath; // full path of writable database
 
         try (Connection connection = DriverManager.getConnection(url)){
             // crating a table for all playlist names

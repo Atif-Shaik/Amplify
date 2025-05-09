@@ -59,7 +59,7 @@ public class PlaylistController {
     MainSceneController mainSceneController;
     FileChooser fileChooser;
     SoundLoader soundLoader;
-    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     SimpleStringProperty Title, Artist;
     public boolean isPlaying, isSongLoaded, isPaused;
     public boolean helperForPlayPause;

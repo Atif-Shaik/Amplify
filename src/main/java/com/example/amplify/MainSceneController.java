@@ -73,7 +73,7 @@ public class MainSceneController {
     Label volumePercent;
 
     Random random;
-    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     String filePath;
     String lastRemovedLikedSong;
     private boolean isSceneCreated = false;
@@ -336,16 +336,19 @@ public class MainSceneController {
 
     // method fro loading liked songs
     public void openLikedList() {
-        try (Connection connection = DriverManager.getConnection(url)){
-            String sql = "SELECT file_paths FROM liked_songs;";
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                String data = resultSet.getString("file_paths");
-                likedList.add(data);
-            } // loop ends
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        File file = new File(url);
+        if (file.exists()) {
+            try (Connection connection = DriverManager.getConnection(url)) {
+                String sql = "SELECT file_paths FROM liked_songs;";
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(sql);
+                while (resultSet.next()) {
+                    String data = resultSet.getString("file_paths");
+                    likedList.add(data);
+                } // loop ends
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     } // method ends
 
@@ -380,7 +383,7 @@ public class MainSceneController {
             try (Connection connection = DriverManager.getConnection(url)){
                 URI uri = new URI(filePath); // converting filepath to uri object
                 File file1 = new File(uri); // converting uri to file object
-                String musicFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Music" + File.separator + file1.getName(); // creating path from LOCALAPPDATA root for liked song
+                String musicFolder = System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "Music" + File.separator + file1.getName(); // creating path from LOCALAPPDATA root for liked song
                 File file2 = new File(musicFolder); // creating file object for new math
                 String newFilepath = file2.toURI().toString(); // creating new filepath uri string for media and mideaplayer from LOCALAPPDATA root
                 if (!file2.exists()) { // cheking if song is not in App's Music folder

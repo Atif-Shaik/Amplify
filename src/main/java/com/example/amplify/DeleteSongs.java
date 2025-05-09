@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.sql.*;
 
 public class DeleteSongs extends Thread {
-    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
 
     public void run() {
         try (Connection connection = DriverManager.getConnection(url)){
@@ -29,7 +29,6 @@ public class DeleteSongs extends Thread {
                 if (file.exists()) {
                     Path path = Paths.get(uri);
                     Files.delete(path);
-                    System.out.println(path);
                 }
             } // loop ends
         } catch (SQLException | URISyntaxException | IOException e) {
