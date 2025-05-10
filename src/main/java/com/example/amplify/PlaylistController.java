@@ -72,7 +72,7 @@ public class PlaylistController {
     Stage mainStage;
     Scene mainScene;
 
-    ImageView backIcon, miniPlay, miniPause, infoIcon, insta, linkedin, github;
+    ImageView backIcon, miniPlay, miniPause, infoIcon, insta, linkedin;
     HBox socialmediaHolder;
     public void initialize() {
         soundLoader = new SoundLoader();
@@ -169,12 +169,9 @@ public class PlaylistController {
         insta.setStyle("-fx-cursor: hand;");
         linkedin = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/linkedin.png"))));
         linkedin.setStyle("-fx-cursor: hand;");
-        github = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/github.png"))));
-        github.setStyle("-fx-cursor: hand;");
 
         JFXRippler instagramLink = new JFXRippler(insta);
         JFXRippler linkedinLink = new JFXRippler(linkedin);
-        JFXRippler githubLink = new JFXRippler(github);
 
         instagramLink.setRipplerFill(Color.GRAY);
         instagramLink.setOnMouseClicked(e -> openLinks("https://www.instagram.com/atif_sk_92"));
@@ -182,10 +179,7 @@ public class PlaylistController {
         linkedinLink.setRipplerFill(Color.GRAY);
         linkedinLink.setOnMouseClicked(e -> openLinks("https://www.linkedin.com/in/shaik-atif-05a965355"));
 
-        githubLink.setRipplerFill(Color.GRAY);
-        githubLink.setOnMouseClicked(e -> openLinks("https://www.github.com/Atif-Shaik"));
-
-        socialmediaHolder = new HBox(10, instagramLink, linkedinLink, githubLink);
+        socialmediaHolder = new HBox(10, instagramLink, linkedinLink);
 
     } // initialize method ends here
 /************************************************************************************************************************/
@@ -618,14 +612,21 @@ public class PlaylistController {
         infoDialog.setTitle("About Amplify-Music");
 
         VBox allContent = new VBox(10);
-        Text heading1 = new Text("How Amplify-Music works?");
+        Text heading1 = new Text("Amplify-Music key features");
         heading1.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
-        Text appWork = getText();
-        appWork.setWrappingWidth(360);
+        Text features = getText();
+        features.setWrappingWidth(360);
+
+        Text policy = new Text("Privacy Policy");
+        policy.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
         Text heading2 = new Text("Bug and Glitch Reporting");
-        heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
+        heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
+
+        Hyperlink policyLink = new Hyperlink("Amplify-Music Privacy Policy");
+        policyLink.setOnAction(e -> openLinks("https://atif-shaik.github.io/Amplify-Music-privacy-policy/"));
+        policyLink.setStyle("-fx-font-size: 18px;");
 
         Text reportText = new Text("Please report any bugs or glitches you encounter while using the application. Your feedback is valuable in helping us improve its performance and stability.");
         reportText.setWrappingWidth(370);
@@ -635,7 +636,7 @@ public class PlaylistController {
         emailLink.setOnAction(e -> openLinks("mailto:atifshaik78692@gmail.com"));
         emailLink.setStyle("-fx-font-size: 18px;");
 
-        Text heading3 = new Text("Follow the developer");
+        Text heading3 = new Text("Follow Us");
         heading3.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
         Text heading4 = new Text("Resources Attribution");
@@ -658,7 +659,7 @@ public class PlaylistController {
         Text version = new Text("1.0.0.0");
         version.setStyle("-fx-font-size: 18px;");
 
-        allContent.getChildren().addAll(heading1, appWork, heading2, reportText, emailLink, heading3, socialmediaHolder, heading4, subHeading1, subHeading2, freepik, heading5, version);
+        allContent.getChildren().addAll(heading1, features, policy, policyLink, heading2, reportText, emailLink, heading3, socialmediaHolder, heading4, subHeading1, subHeading2, freepik, heading5, version);
 
         ScrollPane scrollPane = new ScrollPane(allContent);
         scrollPane.setPrefSize(400,400);
@@ -683,7 +684,11 @@ public class PlaylistController {
     } // method ends
 
     private static Text getText() {
-        Text appWork = new Text("This application facilitates local audio \nplayback by directly accessing files stored on the user's device. It's crucial to understand that the application relies on the file's original path for playback and playlist management. Therefore, any modifications to the audio file's location, such as renaming or moving it, or its deletion, will render it inaccessible to the application. Consequently, the affected song will be automatically removed from the playlist. To ensure uninterrupted playback and maintain playlist integrity, users are advised to store audio files in a designated, stable directory prior to importing them into the application.");
+        Text appWork = new Text("➢ Click on the add button to load a song" +
+                "\n➢ Press Shift + Delete to delete playlist" +
+                "\n➢ Press Ctrl + Delete to delete song" +
+                "\n➢ Press Ctrl + p to play or pause" +
+                "\n➢ Press Left or Right button to change song");
         appWork.setStyle("-fx-font-size: 18px; -fx-padding: 5px 0;");
         return appWork;
     } // method ends

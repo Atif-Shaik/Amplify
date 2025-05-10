@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
@@ -336,19 +337,26 @@ public class MainSceneController {
 
     // method fro loading liked songs
     public void openLikedList() {
-        File file = new File(url);
-        if (file.exists()) {
-            try (Connection connection = DriverManager.getConnection(url)) {
-                String sql = "SELECT file_paths FROM liked_songs;";
-                Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery(sql);
-                while (resultSet.next()) {
-                    String data = resultSet.getString("file_paths");
-                    likedList.add(data);
-                } // loop ends
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+
+        try {
+            String basePath = System.getProperty("user.dir");
+            File file = new File(basePath, "AmplifyMusic" + File.separator + "appdata.db");
+
+            if (file.exists()) { // this if ensures that when the app first installed the app will not crash due to absent od appdata.db which has not created yet
+                try (Connection connection = DriverManager.getConnection(url)) {
+                    String sql = "SELECT file_paths FROM liked_songs;";
+                    Statement statement = connection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(sql);
+                    while (resultSet.next()) {
+                        String data = resultSet.getString("file_paths");
+                        likedList.add(data);
+                    } // loop ends
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     } // method ends
 
