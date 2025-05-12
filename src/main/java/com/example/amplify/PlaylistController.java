@@ -197,12 +197,6 @@ public class PlaylistController {
                         Path targetFolderPath = Paths.get(musicFolder); // getting the path of music folder
                         Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied song
                         Path sourcePath = selectedFile.toPath(); // getting the path of the selected song
-
-                        // this section checks if song is already in the Music folder
-                        String str = targetPath.toString();
-                        File file = new File(str);
-                        if (!file.exists()) Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the song in app sandbox
-
                         filePath = targetPath.toUri().toString();
 
                         boolean isFileExists = addSongsToTable(filePath);
@@ -214,6 +208,24 @@ public class PlaylistController {
                             alert.setContentText("Please choose a different song");
                             alert.showAndWait();
                         } else { // this else block add audio to all places
+                            // this section checks if song is already in the Music folder
+                            String str = targetPath.toString();
+                            String path = targetPath.toUri().toString();
+                            File file = new File(str);
+                            if (!file.exists()) {
+                                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the song in app sandbox
+                                mainSceneController.songsInMusicFolder.put(path,1);
+                                addNewSongTrace(path);
+                            }
+                            else if (file.exists()) {
+                                if (mainSceneController.songsInMusicFolder.containsKey(path)) {
+                                    int num = mainSceneController.songsInMusicFolder.get(path);
+                                    mainSceneController.songsInMusicFolder.put(path, num+1);
+                                    System.out.println(mainSceneController.songsInMusicFolder);
+                                    mainSceneController.updateSongsTable(path);
+                                }
+                            } // else if ends copying song
+
                             mainSceneController.dontReplay = true; // this ensures that song can be loaded when clicked
                             soundLoader.openSong(filePath);
                             Song song = new Song(soundLoader.albumArt, filePath, soundLoader.title, soundLoader.artist);
@@ -242,6 +254,19 @@ public class PlaylistController {
             alert.showAndWait();
         } // main if else ended here
     } // method ends here
+
+    public void addNewSongTrace(String str) {
+        try (Connection connection = DriverManager.getConnection(url)){
+            String sql = "INSERT INTO songs (list, count)" +
+                    "VALUES (?, ?);";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, str);
+            preparedStatement.setInt(2, 1);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    } // method ends
 
     // this method creates new playlist
     public void createPlaylistButtonController() {
@@ -609,10 +634,10 @@ public class PlaylistController {
 
     public void showInfo() {
         Dialog<Void> infoDialog = new Dialog<>();
-        infoDialog.setTitle("About Amplify-Music");
+        infoDialog.setTitle("About AmplifyMax");
 
         VBox allContent = new VBox(10);
-        Text heading1 = new Text("Amplify-Music key features");
+        Text heading1 = new Text("AmplifyMax key features");
         heading1.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
 
         Text features = getText();
@@ -624,7 +649,7 @@ public class PlaylistController {
         Text heading2 = new Text("Bug and Glitch Reporting");
         heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
 
-        Hyperlink policyLink = new Hyperlink("Amplify-Music Privacy Policy");
+        Hyperlink policyLink = new Hyperlink("AmplifyMax Privacy Policy");
         policyLink.setOnAction(e -> openLinks("https://atif-shaik.github.io/Amplify-Music-privacy-policy/"));
         policyLink.setStyle("-fx-font-size: 18px;");
 

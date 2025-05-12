@@ -44,7 +44,7 @@ public class Main extends Application {
         stage.setScene(mainScene);
         stage.setResizable(false);
         stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/logo.png"))));
-        stage.setTitle("Amplify-Music");
+        stage.setTitle("AmplifyMax");
         stage.show();
 
         createDatabaseIfNotExists(stage); // creating sqlite database
@@ -123,11 +123,16 @@ public class Main extends Application {
             // creating table for deleted songs
             String sql3 = "CREATE TABLE IF NOT EXISTS deleted_songs (" +
                     "file_paths TEXT NOT NULL UNIQUE);";
+            // creating table for counting song used in playlist for deleting
+            String sql4 = "CREATE TABLE IF NOT EXISTS songs (" +
+                    "list TEXT NOT NULL," +
+                    "count INTEGER);";
 
             Statement statement = connection.createStatement();
             statement.execute(sql1);
             statement.execute(sql2);
             statement.execute(sql3);
+            statement.execute(sql4);
         } catch (SQLException e) {
             System.out.println(url);
             System.out.println("Failed to connect with database");
