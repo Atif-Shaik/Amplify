@@ -44,9 +44,6 @@ build/
 ### ignore icons ###
 icons/
 
-### ignore AmplifyMusic folder ###
-AmplifyMusic/
-
 ### ignore properties ###
 *.properties
 

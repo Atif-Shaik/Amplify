@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
@@ -73,7 +74,7 @@ public class MainSceneController {
     Label volumePercent;
 
     Random random;
-    String url = "jdbc:sqlite:" + System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     String filePath;
     String lastRemovedLikedSong;
     private boolean isSceneCreated = false;
@@ -342,7 +343,7 @@ public class MainSceneController {
     public void openLikedListAndGetSongUsageDetails() {
 
         try {
-            String basePath = System.getProperty("user.dir");
+            String basePath = System.getenv("LOCALAPPDATA");
             File file = new File(basePath, "AmplifyMusic" + File.separator + "appdata.db");
 
             if (file.exists()) { // this if ensures that when the app first installed the app will not crash due to absent od appdata.db which has not created yet
@@ -358,7 +359,6 @@ public class MainSceneController {
                         String data = resultSet.getString("file_paths");
                         likedList.add(data); // remenber to check file availability here later
                     } // loop ends
-
                     while (resultSet1.next()) { // loop for loading all songs with their traces
                         String song = resultSet1.getString("list");
                         Integer count = resultSet1.getInt("count");
@@ -367,7 +367,6 @@ public class MainSceneController {
                         File path = new File(uri);
                         if (path.exists()) songsInMusicFolder.put(song,count); // this map keeps track of how many times a song is used from music folder to prevent its deletion if used more than once
                         else invalidSongTrace.add(song);
-
                     } // loop ends */
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
@@ -405,6 +404,19 @@ public class MainSceneController {
         } // try catch ends
     } // method ends
 
+    public void addNewSongTrace(String str) {
+        try (Connection connection = DriverManager.getConnection(url)){
+            String sql = "INSERT INTO songs (list, count)" +
+                    "VALUES (?, ?);";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, str);
+            preparedStatement.setInt(2, 1);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    } // method ends
+
     // this method is for like and dislike functionality
     public void likeAndDiskikeController() {
         Alert commonAlert = new Alert(Alert.AlertType.INFORMATION);
@@ -415,29 +427,43 @@ public class MainSceneController {
             try (Connection connection = DriverManager.getConnection(url)){
                 URI uri = new URI(filePath); // converting filepath to uri object
                 File file1 = new File(uri); // converting uri to file object
-                String musicFolder = System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "Music" + File.separator + file1.getName(); // creating path from LOCALAPPDATA root for liked song
-                File file2 = new File(musicFolder); // creating file object for new math
-                String newFilepath = file2.toURI().toString(); // creating new filepath uri string for media and mideaplayer from LOCALAPPDATA root
+                String musicFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Music" + File.separator + file1.getName(); // creating path from LOCALAPPDATA root for liked song
+                File file2 = new File(musicFolder); // creating file object for new path
+
+                Path temPath = file2.toPath();
+                String newFilepath = temPath.toAbsolutePath().toUri().toString();
+
                 if (!file2.exists()) { // cheking if song is not in App's Music folder
                     Path sourcePath = file1.toPath(); // converting to path
                     Path targetPath = file2.toPath(); // converting to path
                     Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
                     filePath = newFilepath; // assigninh new file path to filePath (crucial)
+                    songsInMusicFolder.put(filePath, 1); // adding new song details in trace map
+                    addNewSongTrace(filePath); // this will add new selected song for tracing
                 } // if ends
-                else if (file2.exists()) { // this else if prevents adding selected song to liked list database if it is already in liked list
+                else if (file2.exists()) { // this else if prevents adding selected song to liked list database if it is already in liked
+                    filePath = newFilepath; // assigninh new file path to filePath (crucial)
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.initOwner(mainStage);
                     alert.setTitle("Information");
                     alert.setHeaderText(null);
                     alert.setContentText("It appears this song is already in your 'Liked' collection");
-                    if (playlistController == null) {
-                        alert.showAndWait();
-                        return; // omiting following code of method (crucial)
-                    } else if (playlistController != null && playlistController.isPlaylistLoaded == false) {
+                    if (likedList.contains(filePath)) {
                         alert.showAndWait();
                         return; // omiting following code of method (crucial)
                     }
                 } // if ends
+
+                if (songsInMusicFolder.containsKey(filePath)) {
+                    int cont = songsInMusicFolder.get(filePath);
+                    if (cont > 1) {
+                        songsInMusicFolder.put(filePath, cont + 1);
+                        updateSongsTable(filePath); // this will increment the use oh song
+                    }
+                } else {
+                    addNewSongTrace(filePath);
+                    songsInMusicFolder.put(filePath, 1);
+                }
 
                 // writing data to database
                 String sql1 = "INSERT INTO liked_songs (file_paths)" +
@@ -493,6 +519,16 @@ public class MainSceneController {
 
                 isLiked = false;
                 likeAndDislike.setGraphic(dislike);
+
+                if (songsInMusicFolder.containsKey(filePath)) {
+                    int count = songsInMusicFolder.get(filePath);
+                    if (count > 1) {
+                        songsInMusicFolder.put(filePath, count - 1);
+                    } else if (count == 1) {
+                        deleteSongsTable(filePath);
+                        songsInMusicFolder.remove(filePath);
+                    }
+                }
 
                 PreparedStatement preparedStatement1 = connection.prepareStatement(sql2);
                 preparedStatement1.setString(1,filePath);
@@ -795,7 +831,6 @@ public class MainSceneController {
             boolean confirmation = checkIfSongIsUsedMoreThanOnce(songPath);
 
             if (confirmation) {
-                System.out.println(songPath);
                 preparedStatement2.executeUpdate();
             }
 

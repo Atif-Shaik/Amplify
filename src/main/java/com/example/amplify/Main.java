@@ -96,14 +96,14 @@ public class Main extends Application {
     } // method ends
 
     public static void createDatabaseIfNotExists(Stage stage) {
-        String userDir = System.getProperty("user.dir") + File.separator + "AmplifyMusic";
+        String userDir = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
 
-        String basePath = System.getProperty("user.dir");
+        String basePath = System.getenv("LOCALAPPDATA");
         File amplifyMusicdir = new File(basePath, "AmplifyMusic");
 
         if (!amplifyMusicdir.exists()) {
             boolean created = amplifyMusicdir.mkdirs();
-            String amplifyMusicdirPath = System.getProperty("user.dir") + File.separator + "AmplifyMusic";
+            String amplifyMusicdirPath = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
             File musicdir = new File(amplifyMusicdirPath, "Music");
             if (!musicdir.exists()) {
                 boolean created1 = musicdir.mkdirs();

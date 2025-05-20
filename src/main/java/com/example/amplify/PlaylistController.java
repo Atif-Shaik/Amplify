@@ -59,7 +59,7 @@ public class PlaylistController {
     MainSceneController mainSceneController;
     FileChooser fileChooser;
     SoundLoader soundLoader;
-    String url = "jdbc:sqlite:" + System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     SimpleStringProperty Title, Artist;
     public boolean isPlaying, isSongLoaded, isPaused;
     public boolean helperForPlayPause;
@@ -192,12 +192,13 @@ public class PlaylistController {
                 if (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".asc")) {
                     String filePath;
                     try {
-                        String musicFolder = System.getProperty("user.dir") + File.separator + "AmplifyMusic" + File.separator + "Music";
+                        String musicFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Music";
 
                         Path targetFolderPath = Paths.get(musicFolder); // getting the path of music folder
                         Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied song
-                        Path sourcePath = selectedFile.toPath(); // getting the path of the selected song
-                        filePath = targetPath.toUri().toString();
+                        Path sourcePath = selectedFile.toPath(); // getting the path of the selected
+
+                        filePath = targetPath.toAbsolutePath().toUri().toString();
 
                         boolean isFileExists = addSongsToTable(filePath);
                         if (isFileExists) { // this if block is for when the selected song is already in database
@@ -210,19 +211,18 @@ public class PlaylistController {
                         } else { // this else block add audio to all places
                             // this section checks if song is already in the Music folder
                             String str = targetPath.toString();
-                            String path = targetPath.toUri().toString();
+
                             File file = new File(str);
                             if (!file.exists()) {
                                 Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the song in app sandbox
-                                mainSceneController.songsInMusicFolder.put(path,1);
-                                addNewSongTrace(path);
+                                mainSceneController.songsInMusicFolder.put(filePath,1);
+                                addNewSongTrace(filePath);
                             }
                             else if (file.exists()) {
-                                if (mainSceneController.songsInMusicFolder.containsKey(path)) {
-                                    int num = mainSceneController.songsInMusicFolder.get(path);
-                                    mainSceneController.songsInMusicFolder.put(path, num+1);
-                                    System.out.println(mainSceneController.songsInMusicFolder);
-                                    mainSceneController.updateSongsTable(path);
+                                if (mainSceneController.songsInMusicFolder.containsKey(filePath)) {
+                                    int num = mainSceneController.songsInMusicFolder.get(filePath);
+                                    mainSceneController.songsInMusicFolder.put(filePath, num+1);
+                                    mainSceneController.updateSongsTable(filePath);
                                 }
                             } // else if ends copying song
 
@@ -650,7 +650,7 @@ public class PlaylistController {
         heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
 
         Hyperlink policyLink = new Hyperlink("AmplifyMax Privacy Policy");
-        policyLink.setOnAction(e -> openLinks("https://atif-shaik.github.io/Amplify-Music-privacy-policy/"));
+        policyLink.setOnAction(e -> openLinks("https://atif-shaik.github.io/AmplifMax-privacy-policy/"));
         policyLink.setStyle("-fx-font-size: 18px;");
 
         Text reportText = new Text("Please report any bugs or glitches you encounter while using the application. Your feedback is valuable in helping us improve its performance and stability.");
