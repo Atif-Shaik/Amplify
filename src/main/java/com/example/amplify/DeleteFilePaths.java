@@ -7,7 +7,7 @@ import java.util.Collection;
 
 public class DeleteFilePaths extends Thread{
     ArrayList<String> arrayList;
-    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     String playlist;
 
     public DeleteFilePaths(ArrayList<String> arrayList, String playlist) {

@@ -3,6 +3,11 @@ package com.example.amplify;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.logging.LogManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -39,10 +44,14 @@ public class Main extends Application {
         stage.setScene(mainScene);
         stage.setResizable(false);
         stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/logo.png"))));
-        stage.setTitle("Amplify-Music");
+        stage.setTitle("AmplifyMax");
         stage.show();
 
         createDatabaseIfNotExists(stage); // creating sqlite database
+
+        DeleteSongs deleteSongs = new DeleteSongs(); // creating thread object
+        deleteSongs.start(); // starting the thread to deleted song from Music folder
+
         addLikedlistToPlaylistTable(); // adding lined songs table name to all playlist names table
 
         // adding closing confirmation
@@ -87,10 +96,19 @@ public class Main extends Application {
     } // method ends
 
     public static void createDatabaseIfNotExists(Stage stage) {
-        String userDir = System.getProperty("user.home") + File.separator + ".amplifydata"; // creating a user writable directory in the home place of user
-        File dir = new File(userDir);
+        String userDir = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
 
-        if (!dir.exists()) dir.mkdirs(); // this line creates database folder for the first time
+        String basePath = System.getenv("LOCALAPPDATA");
+        File amplifyMusicdir = new File(basePath, "AmplifyMusic");
+
+        if (!amplifyMusicdir.exists()) {
+            boolean created = amplifyMusicdir.mkdirs();
+            String amplifyMusicdirPath = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
+            File musicdir = new File(amplifyMusicdirPath, "Music");
+            if (!musicdir.exists()) {
+                boolean created1 = musicdir.mkdirs();
+            }
+        } // if ends
 
         String dbPath = userDir + File.separator + "appdata.db";
         url = "jdbc:sqlite:" + dbPath; // full path of writable database
@@ -102,10 +120,19 @@ public class Main extends Application {
             // creating liked song table
             String sql2 = "CREATE TABLE IF NOT EXISTS liked_songs (" +
                     "file_paths TEXT NOT NULL UNIQUE);";
-            String at = "liked_songs";
+            // creating table for deleted songs
+            String sql3 = "CREATE TABLE IF NOT EXISTS deleted_songs (" +
+                    "file_paths TEXT NOT NULL UNIQUE);";
+            // creating table for counting song used in playlist for deleting
+            String sql4 = "CREATE TABLE IF NOT EXISTS songs (" +
+                    "list TEXT NOT NULL," +
+                    "count INTEGER);";
+
             Statement statement = connection.createStatement();
             statement.execute(sql1);
             statement.execute(sql2);
+            statement.execute(sql3);
+            statement.execute(sql4);
         } catch (SQLException e) {
             System.out.println(url);
             System.out.println("Failed to connect with database");

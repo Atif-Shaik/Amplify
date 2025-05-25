@@ -5,7 +5,6 @@ import com.example.sound.SoundLoader;
 import com.jfoenix.controls.*;
 import javafx.animation.AnimationTimer;
 import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
@@ -24,6 +23,13 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
 
@@ -44,7 +50,7 @@ public class MainSceneController {
     JFXButton volumeButton;
 
     int lastIndex = 0;
-    ArrayList<Integer> removedSongIndex;
+    LinkedHashSet<Integer> removedSongIndex;
     int playlistIndex = 0;
     int countLiveSeconds = 0; // the count veriable counts the real time
     int i;
@@ -68,7 +74,7 @@ public class MainSceneController {
     Label volumePercent;
 
     Random random;
-    String url = "jdbc:sqlite:" + System.getProperty("user.home") + File.separator + ".amplifydata" + File.separator + "appdata.db";
+    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     String filePath;
     String lastRemovedLikedSong;
     private boolean isSceneCreated = false;
@@ -93,7 +99,9 @@ public class MainSceneController {
     PauseTransition delay;
 
     ArrayList<String> erroredSong;
+    ArrayList<String> invalidSongTrace;
     ArrayList<Song> songsShouldBeRemoved;
+    LinkedHashMap<String, Integer> songsInMusicFolder;
     FileChooser fileChooser;
     SoundLoader soundLoader;
 
@@ -107,9 +115,11 @@ public class MainSceneController {
         opendPlaylist = new LinkedList<>();
         likedList = new LinkedList<>();
         // initializing arraylist
-        removedSongIndex = new ArrayList<>();
+        removedSongIndex = new LinkedHashSet<>();
         erroredSong = new ArrayList<>();
         songsShouldBeRemoved = new ArrayList<>();
+        invalidSongTrace = new ArrayList<>();
+        songsInMusicFolder = new LinkedHashMap<>();
         // initializing vbox
         popupContent = new AnchorPane();
         popupContent.setPrefSize(240,40); // add before popup setting
@@ -276,7 +286,7 @@ public class MainSceneController {
                         resetLiveCountSeconds();
                     } // inner 2 if ends
                     if (countLiveSeconds == totalDurationInSeconds && isLooped) { // this if loops the song when on
-                        soundLoader.mediaPlayer.seek(javafx.util.Duration.seconds(0));
+                        soundLoader.mediaPlayer.seek(Duration.seconds(0));
                         resetLiveCountSeconds();
                     } // inner 3 if ends
                     if (countLiveSeconds == totalDurationInSeconds && isShuffled && opendPlaylist.size() > 1) {
@@ -313,7 +323,7 @@ public class MainSceneController {
         slider.setMin(0);
         slider.setMax(100);
         slider.setValue(0);
-        openLikedList(); // loading liked song list
+        openLikedListAndGetSongUsageDetails(); // loading liked song list
     } // initialize method ends ****************************************************************************************
 
     public void checkLikedSong() {
@@ -330,16 +340,45 @@ public class MainSceneController {
     } // method ends
 
     // method fro loading liked songs
-    public void openLikedList() {
-        try (Connection connection = DriverManager.getConnection(url)){
-            String sql = "SELECT file_paths FROM liked_songs;";
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                String data = resultSet.getString("file_paths");
-                likedList.add(data);
-            } // loop ends
-        } catch (SQLException e) {
+    public void openLikedListAndGetSongUsageDetails() {
+
+        try {
+            String basePath = System.getenv("LOCALAPPDATA");
+            File file = new File(basePath, "AmplifyMusic" + File.separator + "appdata.db");
+
+            if (file.exists()) { // this if ensures that when the app first installed the app will not crash due to absent od appdata.db which has not created yet
+                try (Connection connection = DriverManager.getConnection(url)) {
+                    String sql = "SELECT file_paths FROM liked_songs;";
+                    String sql1 = "SELECT list, count FROM songs;";
+                    Statement statement = connection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(sql);
+
+                    Statement statement1 = connection.createStatement();
+                    ResultSet resultSet1 = statement1.executeQuery(sql1);
+                    while (resultSet.next()) {
+                        String data = resultSet.getString("file_paths");
+                        likedList.add(data); // remenber to check file availability here later
+                    } // loop ends
+                    while (resultSet1.next()) { // loop for loading all songs with their traces
+                        String song = resultSet1.getString("list");
+                        Integer count = resultSet1.getInt("count");
+
+                        URI uri = new URI(song);
+                        File path = new File(uri);
+                        if (path.exists()) songsInMusicFolder.put(song,count); // this map keeps track of how many times a song is used from music folder to prevent its deletion if used more than once
+                        else invalidSongTrace.add(song);
+                    } // loop ends */
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                if (!invalidSongTrace.isEmpty()) {
+                    for (var str : invalidSongTrace) {
+                        deleteSongsTable(str);
+                    } // for loop
+                    invalidSongTrace.clear();
+                } // if for deleting invalid songs
+            } // if ends
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     } // method ends
@@ -365,6 +404,19 @@ public class MainSceneController {
         } // try catch ends
     } // method ends
 
+    public void addNewSongTrace(String str) {
+        try (Connection connection = DriverManager.getConnection(url)){
+            String sql = "INSERT INTO songs (list, count)" +
+                    "VALUES (?, ?);";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, str);
+            preparedStatement.setInt(2, 1);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    } // method ends
+
     // this method is for like and dislike functionality
     public void likeAndDiskikeController() {
         Alert commonAlert = new Alert(Alert.AlertType.INFORMATION);
@@ -373,16 +425,61 @@ public class MainSceneController {
         commonAlert.setHeaderText(null);
         if (!isLiked && isSongLoaded) {
             try (Connection connection = DriverManager.getConnection(url)){
-                // writing file path of liked song to database
-                String sql = "INSERT INTO liked_songs (file_paths)" +
+                URI uri = new URI(filePath); // converting filepath to uri object
+                File file1 = new File(uri); // converting uri to file object
+                String musicFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Music" + File.separator + file1.getName(); // creating path from LOCALAPPDATA root for liked song
+                File file2 = new File(musicFolder); // creating file object for new path
+
+                Path temPath = file2.toPath();
+                String newFilepath = temPath.toAbsolutePath().toUri().toString();
+
+                if (!file2.exists()) { // cheking if song is not in App's Music folder
+                    Path sourcePath = file1.toPath(); // converting to path
+                    Path targetPath = file2.toPath(); // converting to path
+                    Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    filePath = newFilepath; // assigninh new file path to filePath (crucial)
+                    songsInMusicFolder.put(filePath, 1); // adding new song details in trace map
+                    addNewSongTrace(filePath); // this will add new selected song for tracing
+                } // if ends
+                else if (file2.exists()) { // this else if prevents adding selected song to liked list database if it is already in liked
+                    filePath = newFilepath; // assigninh new file path to filePath (crucial)
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.initOwner(mainStage);
+                    alert.setTitle("Information");
+                    alert.setHeaderText(null);
+                    alert.setContentText("It appears this song is already in your 'Liked' collection");
+                    if (likedList.contains(filePath)) {
+                        alert.showAndWait();
+                        return; // omiting following code of method (crucial)
+                    }
+                } // if ends
+
+                if (songsInMusicFolder.containsKey(filePath)) {
+                    int cont = songsInMusicFolder.get(filePath);
+                    if (cont > 1) {
+                        songsInMusicFolder.put(filePath, cont + 1);
+                        updateSongsTable(filePath); // this will increment the use oh song
+                    }
+                } else {
+                    addNewSongTrace(filePath);
+                    songsInMusicFolder.put(filePath, 1);
+                }
+
+                // writing data to database
+                String sql1 = "INSERT INTO liked_songs (file_paths)" +
                         "VALUES (?);";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                String sql2 = "DELETE FROM deleted_songs WHERE file_paths = ?";
+                PreparedStatement preparedStatement = connection.prepareStatement(sql1);
                 preparedStatement.setString(1, filePath);
-                preparedStatement.executeUpdate();
+                preparedStatement.executeUpdate(); // adding liked song to database
 
                 isLiked = true;
                 likeAndDislike.setGraphic(like);
                 likedList.add(filePath);
+
+                PreparedStatement preparedStatement1 = connection.prepareStatement(sql2);
+                preparedStatement1.setString(1, filePath);
+                preparedStatement1.executeUpdate();
 
                 if (playlistController != null) {
                     // this if adds the liked song to the listview if the liked songs list is selected
@@ -402,24 +499,41 @@ public class MainSceneController {
                 commonAlert.setContentText("Song added to liked list!");
                 commonAlert.showAndWait();
             } catch (SQLException e) {
-                System.out.println(filePath);
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.initOwner(mainStage);
-                alert.setTitle("Error");
-                alert.setHeaderText("Unable to add Song to liked list!");
-                alert.setContentText("Please contact us!");
-                alert.showAndWait();
+                throw new RuntimeException(e);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             } // try catch ends
         } // if ends
         else if (isLiked && isSongLoaded) {
             try (Connection connection = DriverManager.getConnection(url)){
                 // deleting song from database
-                String sql = "DELETE FROM liked_songs WHERE file_paths = (?)";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                String sql1 = "DELETE FROM liked_songs WHERE file_paths = ?;";
+                String sql2 = "INSERT INTO deleted_songs (file_paths)" +
+                        "VALUES (?);";
+
+                PreparedStatement preparedStatement = connection.prepareStatement(sql1);
                 preparedStatement.setString(1, filePath);
-                preparedStatement.executeUpdate();
+                preparedStatement.executeUpdate(); // deleting song from liked list database
+
                 isLiked = false;
                 likeAndDislike.setGraphic(dislike);
+
+                if (songsInMusicFolder.containsKey(filePath)) {
+                    int count = songsInMusicFolder.get(filePath);
+                    if (count > 1) {
+                        songsInMusicFolder.put(filePath, count - 1);
+                    } else if (count == 1) {
+                        deleteSongsTable(filePath);
+                        songsInMusicFolder.remove(filePath);
+                    }
+                }
+
+                PreparedStatement preparedStatement1 = connection.prepareStatement(sql2);
+                preparedStatement1.setString(1,filePath);
+                preparedStatement1.executeUpdate();
+
                 if (playlistController != null) {
                     if (playlistController.loadedPlaylist.equals("LIKED SONGS")) {
                         letItPlay = true; // setting it true so that listview cannot load other song and this song can still finish its playback
@@ -443,12 +557,7 @@ public class MainSceneController {
                 commonAlert.setContentText("Song removed from liked list!");
                 commonAlert.showAndWait();
             } catch (SQLException e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.initOwner(mainStage);
-                alert.setTitle("Error");
-                alert.setHeaderText("Unable to delete Song from liked list!");
-                alert.setContentText("Please contact us!");
-                alert.showAndWait();
+                throw new RuntimeException(e);
             } // try catch ends
         } // else if ends
     } // method ends here
@@ -528,7 +637,7 @@ public class MainSceneController {
     public void setNewTimeline() {
         isDragging = false;
         if(isSongLoaded) {
-            soundLoader.mediaPlayer.seek(javafx.util.Duration.seconds(slider.getValue()));
+            soundLoader.mediaPlayer.seek(Duration.seconds(slider.getValue()));
             double tempValue = slider.getValue();
             countLiveSeconds = (int) tempValue; // remember it for later
             liveSconds = (int) tempValue % 60;
@@ -710,15 +819,24 @@ public class MainSceneController {
         try (Connection connection = DriverManager.getConnection(url)){
             playlist = playlist.toLowerCase();
             playlist = playlist.replace(" ", "_");
-            String sql = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, songPath);
-            preparedStatement.executeUpdate();
+            String sql1 = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
+            String sql2 = "INSERT INTO deleted_songs (file_paths)" +
+                    "VALUES (?);";
+            PreparedStatement preparedStatement1 = connection.prepareStatement(sql1);
+            preparedStatement1.setString(1, songPath);
+            preparedStatement1.executeUpdate();
+
+            PreparedStatement preparedStatement2 = connection.prepareStatement(sql2);
+            preparedStatement2.setString(1, songPath);
+            boolean confirmation = checkIfSongIsUsedMoreThanOnce(songPath);
+
+            if (confirmation) {
+                preparedStatement2.executeUpdate();
+            }
 
         } catch (SQLException sqlException) {
             System.out.println("Error " + sqlException.getMessage());
         }
-
     } // method ends
 
     // this method gets user confirmation before deleting
@@ -919,5 +1037,47 @@ public class MainSceneController {
         }
     } // method ends
 
+    public boolean checkIfSongIsUsedMoreThanOnce(String str) {
+        boolean result = false;
+        if (songsInMusicFolder.containsKey(str)) {
+            int count = songsInMusicFolder.get(str);
+            if (count > 1) {
+                count--;
+                songsInMusicFolder.put(str, count);
+                updateSongsTable(str);
+                result = false; // false means the song is used in more than one playlist
+            } else if (count == 1){
+                deleteSongsTable(str);
+                result = true; // true means the song is used in only one playlist so it can be deleted
+            }
+        }
+        return result;
+    } // method ends here
+
+    public void deleteSongsTable(String str) {
+       try (Connection connection = DriverManager.getConnection(url)){
+           String sql = "DELETE FROM songs WHERE list = ?;";
+           PreparedStatement preparedStatement = connection.prepareStatement(sql);
+           preparedStatement.setString(1, str);
+           preparedStatement.executeUpdate();
+       } catch (Exception e) {
+           throw new RuntimeException(e);
+       }
+    } // method ends
+
+    public void updateSongsTable(String str) {
+        if (songsInMusicFolder.containsKey(str)) {
+            int newCount = songsInMusicFolder.get(str);
+            try (Connection connection = DriverManager.getConnection(url)) {
+                String sql = "UPDATE songs SET count = ? WHERE list = ?;";
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                preparedStatement.setString(2, str);
+                preparedStatement.setInt(1, newCount);
+                preparedStatement.executeUpdate();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } // if ends
+    } //  method ends
 
 } // class ends here
