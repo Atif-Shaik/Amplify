@@ -1,13 +1,7 @@
-#playlistSceneFXML {
-	-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));
-}
-#miniAnchor {
-    -fx-border-color: white;
-    -fx-background-color: linear-gradient(to right, rgb(173,216,230), rgb(0,0,139));
-}
 #back {
     -fx-background-color: cyan;
 }
+
 .round-button {
 	-fx-background-radius: 50;
 	-fx-padding: 10;
@@ -24,11 +18,13 @@
     -fx-prompt-text-fill: white;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-focus-color: #2196F3;
-    -fx-unfocus-color: #BDBDBD;
+    -fx-control-inner-background: #b3d9ff;
 }
-.jfx-combo-box .list-cell {
-    -fx-text-fill: #212121;
+.jfx-combo-box .text {
+    -fx-fill: #000000;
+}
+.jfx-combo-box .arrow {
+    -fx-background-color: black;
 }
 .custom-cell {
     -fx-spacing: 10px;

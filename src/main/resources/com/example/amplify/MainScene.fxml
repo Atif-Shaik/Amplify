@@ -73,5 +73,7 @@
       <JFXButton fx:id="playlist" buttonType="RAISED" ellipsisString="" layoutX="427.0" layoutY="43.0" prefHeight="32.0" prefWidth="32.0" />
       <JFXButton fx:id="volume" buttonType="RAISED" ellipsisString="" layoutX="24.0" layoutY="96.0" prefHeight="24.0" prefWidth="24.0" />
       <JFXButton fx:id="likeAndDislike" buttonType="RAISED" layoutX="435.0" layoutY="96.0" prefHeight="24.0" prefWidth="24.0" />
+      <JFXButton fx:id="settings" buttonType="RAISED" layoutX="435.0" layoutY="142.0" prefHeight="24.0" prefWidth="24.0" />
+      <JFXButton fx:id="lyricsAndBanner" buttonType="RAISED" ellipsisString="" layoutX="24.0" layoutY="142.0" prefHeight="24.0" prefWidth="24.0" />
    </children>
 </AnchorPane>

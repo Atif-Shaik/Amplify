@@ -14,9 +14,11 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
@@ -53,6 +55,8 @@ public class PlaylistController {
     JFXListView<Song> listView;
     @FXML
     TextField input;
+    @FXML
+    AnchorPane playlistSceneFXML, miniAnchor;
 
     String selection;
     String loadedPlaylist = "Empty";
@@ -731,5 +735,24 @@ public class PlaylistController {
         mainSceneController.letItUpdateInlistviewListener = false;
         mainSceneController.songsShouldBeRemoved.clear();
     } // method ends
+
+    // this method sets theme for playlist
+    public void changeThemeForPlaylistScene(String theme, String miniAnchorTheme, String miniAnchorBorder, String comboboxTheme) {
+        playlistSceneFXML.setStyle(theme);
+        miniAnchor.setStyle(miniAnchorTheme + miniAnchorBorder);
+        if (comboboxTheme.equals("Default Theme")) { // changing combo box's theme according app's theme
+            playlists.lookupAll(".text").forEach(text -> text.setStyle("-fx-fill: #000000;"));
+            playlists.setStyle("-fx-control-inner-background: #b3d9ff;");
+            playlists.setFocusColor(Paint.valueOf("#4059A9")); // changing the color of underline of combobox
+            playlists.setUnFocusColor(Paint.valueOf("#4059A9"));
+            playlists.lookupAll(".arrow").forEach(arrow -> arrow.setStyle("-fx-background-color: #000000;"));
+        } else if (comboboxTheme.equals("Dark Theme")) {
+            playlists.lookupAll(".arrow").forEach(arrow -> arrow.setStyle("-fx-background-color: #ffffff;"));
+            playlists.lookupAll(".text").forEach(text -> text.setStyle("-fx-fill: #ffffff;"));
+            playlists.setFocusColor(javafx.scene.paint.Paint.valueOf("#008000"));
+            playlists.setUnFocusColor(Paint.valueOf("#008000"));
+            playlists.setStyle("-fx-control-inner-background: #00e6ac;");
+        }
+    } // end
 
 } // class ends

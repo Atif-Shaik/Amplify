@@ -1,7 +1,4 @@
-#mainSceneFXML{
-    -fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));
-}
-.custom-effect1 { /* for forward abd backward */
+.custom-effect1 { /* for forward and backward */
     -jfx-button-type: RAISED;
     -fx-background-color: cyan;
 }
@@ -14,14 +11,12 @@
 }
 .jfx-popup-container {
     -fx-padding: 0;
-    -fx-background-radius: 5px;
-    -fx-background-color: cyan;
-    -fx-border-color: cyan;
-    -fx-border-radius: 5px;
+    -fx-background-radius: 1px;
+    -fx-border-radius: 1px;
     -fx-border-width: 1px;
-    -fx-background-insets: 0;
-    -fx-border-insets: 0;
-    -fx-effect: dropshadow(gaussian, rgb(0,0,0,0.5), 5,0.4,-4,+4);
+    -fx-background-insets: -1;
+    -fx-border-insets: -1;
+    -fx-effect: dropshadow(gaussian, rgb(0,0,0,0.5), 4,0.3,-3,0);
 }
 .font-for-volume-percent {
     -fx-font-family: "Candara";

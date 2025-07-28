@@ -1,5 +1,7 @@
 package com.example.amplify;
 
+import com.example.setting.Settings;
+import com.example.setting.SettingsManager;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
 import com.jfoenix.controls.*;
@@ -10,6 +12,8 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -17,11 +21,15 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.Paint;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import javax.sound.sampled.Line;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -35,7 +43,7 @@ import java.util.*;
 
 public class MainSceneController {
     @FXML
-    JFXButton playpause, backward, forward, addSong, playlist, volume, likeAndDislike;
+    JFXButton playpause, backward, forward, addSong, playlist, volume, likeAndDislike, settings, lyricsAndBanner, sleepButton;
     @FXML
     Label song_title, artist_name;
     @FXML
@@ -46,8 +54,14 @@ public class MainSceneController {
     Label currentLength, fullLength;
     @FXML
     JFXToggleButton loop, shuffle;
+    @FXML
+    AnchorPane mainSceneFXML;
 
     JFXButton volumeButton;
+    JFXComboBox<String> minuteSelection;
+    RadioButton option1, option2;
+    Dialog<Void> showSettings;
+    Settings appSettings;
 
     int lastIndex = 0;
     LinkedHashSet<Integer> removedSongIndex;
@@ -64,7 +78,7 @@ public class MainSceneController {
     Stage mainStage;
     Scene mainScene, playlistScene;
     PlaylistController playlistController;
-    ImageView play, back, fast, add, list, pause, speaker, no_speaker, volumeIcon, mute, like, dislike;
+    ImageView play, back, fast, add, list, pause, speaker, no_speaker, volumeIcon, mute, like, dislike, setting, lyrics;
     Image art;
     LinkedList<String> opendPlaylist;
     LinkedList<String> likedList;
@@ -107,6 +121,7 @@ public class MainSceneController {
 
     @FXML
     public void initialize() { // initialize method starts
+
         // initializing SoundLoader
         soundLoader = new SoundLoader();
         // initializing file chooser
@@ -139,6 +154,8 @@ public class MainSceneController {
 
         // load custom icons for buttons
         art = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/banner.png")));
+        lyrics = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/lyrics.png"))));
+        setting = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/settings.png"))));
         play = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/play.png"))));
         pause = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/pause.png"))));
         back = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/backward.png"))));
@@ -179,6 +196,8 @@ public class MainSceneController {
 
         // add custom icons to buttons
         playpause.setGraphic(play);
+        lyricsAndBanner.setGraphic(lyrics);
+        settings.setGraphic(setting);
         addSong.setGraphic(add);
         playlist.setGraphic(list);
         backward.setGraphic(back);
@@ -187,6 +206,8 @@ public class MainSceneController {
         likeAndDislike.setGraphic(dislike);
 
         // add css styles to buttons
+        lyricsAndBanner.getStyleClass().add("custom-button");
+        settings.getStyleClass().add("custom-button");
         playlist.getStyleClass().add("custom-button");
         addSong.getStyleClass().add("custom-button");
         forward.getStyleClass().add("custom-effect1");
@@ -243,6 +264,7 @@ public class MainSceneController {
             popup.hide(); // hiding popup after 3 seconds
         });
         volumeButton.setOnMouseClicked(event -> {delay.stop();delay.play();});
+        settings.setOnAction(event -> setSettings());
 
         // binding label with simple string property
         Title = new SimpleStringProperty("(Song Title)");
@@ -708,6 +730,10 @@ public class MainSceneController {
                 playlistController.setStage(mainStage); // sending stage reference only one time
                 playlistController.setScene(mainScene); // sending scene reference only one time
                 playlistController.setController(this); // sending main scene controller referance
+
+                // changing selected app theme for playlistscene
+                playlistController.changeThemeForPlaylistScene(appSettings.getTheme(), appSettings.getMiniAnchorTheme(), appSettings.getMiniAnchorBorderTheme(), appSettings.getComboboxTheme());
+
                 // activating playlist scene
                 mainStage.setScene(playlistScene);
                 mainStage.show();
@@ -1079,5 +1105,155 @@ public class MainSceneController {
             }
         } // if ends
     } //  method ends
+
+    // method for settings
+    public void setSettings() { // method starts
+        if (showSettings == null) {
+            showSettings = new Dialog<>();
+
+            showSettings.initOwner(mainStage);
+            showSettings.setTitle("Settings");
+
+            VBox content = new VBox();
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(290, 200);
+
+            Label settingLabel = new Label("App Theme");
+            Label timerLabel = new Label("Sleep Timer");
+
+            settingLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+            timerLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+            option1 = new RadioButton("Default Theme");
+            option2 = new RadioButton("Dark Theme");
+
+            ToggleGroup group = new ToggleGroup();
+            option1.setToggleGroup(group);
+            option2.setToggleGroup(group);
+            // setting the selected or default theme selected
+            if (appSettings.getTheme().equals("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));")) {
+                option1.setSelected(true);
+            } else if (appSettings.getTheme().equals("-fx-background-color: linear-gradient(to bottom, #444444, #000000);")) {
+                option2.setSelected(true);
+            } // end
+
+            // adding listeners to togglegroup
+            group.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+                if (newToggle != null) {
+                    RadioButton selected = (RadioButton) newToggle; // casting toggle group selected to radiobutton
+                    System.out.println(selected.getText());
+                    if ("Default Theme".equals(selected.getText())) {
+                        mainSceneFXML.setStyle("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));");
+                        for (Node node : mainSceneFXML.getChildren()) {
+                            if (node == playpause) {
+                                play.setImage(null);
+                                play.setImage(new Image(getClass().getResourceAsStream("/icons/play.png")));
+                                pause.setImage(null);
+                                pause.setImage(new Image(getClass().getResourceAsStream("/icons/pause.png")));
+                                continue;
+                            } else if (node == backward) {
+                                back.setImage(null);
+                                back.setImage(new Image(getClass().getResourceAsStream("/icons/backward.png")));
+                                backward.setStyle("-fx-background-color: cyan;");
+                                continue;
+                            } else if (node == forward) {
+                                fast.setImage(null);
+                                fast.setImage(new Image(getClass().getResourceAsStream("/icons/forward.png")));
+                                forward.setStyle("-fx-background-color: cyan;");
+                                continue;
+                            }
+
+                            if (node instanceof JFXButton) {
+                                node.setStyle("-fx-background-color: cyan;");
+                            }
+                        } // loop end
+                        popupContent.setStyle("-fx-background-color: cyan; -fx-border-color: cyan;");
+                        if (playlistController != null) { // changing default theme for playlistscene
+                            playlistController.changeThemeForPlaylistScene("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));", "-fx-background-color: linear-gradient(to right, rgb(173,216,230), rgb(0,0,139));", "-fx-border-color: white;", "Default Theme");
+                            playlistController.miniPlay.setImage(null);
+                            playlistController.miniPlay.setImage(new Image(getClass().getResourceAsStream("/icons/miniplay.png")));
+                            playlistController.miniPause.setImage(null);
+                            playlistController.miniPause.setImage(new Image(getClass().getResourceAsStream("/icons/minipause.png")));
+
+                            for (Node node : playlistController.playlistSceneFXML.getChildren()) {
+                                if (node instanceof JFXButton) {
+                                    node.setStyle("-fx-background-color: cyan;");
+                                }
+                            } // loop ends
+                        }
+                    } else if ("Dark Theme".equals(selected.getText())) {
+                        mainSceneFXML.setStyle("-fx-background-color: linear-gradient(to bottom, #444444, #000000);");
+                        for (Node node : mainSceneFXML.getChildren()) {
+                            if (node == playpause) {
+                                play.setImage(null);
+                                play.setImage(new Image(getClass().getResourceAsStream("/icons/darkPlay.png")));
+                                pause.setImage(null);
+                                pause.setImage(new Image(getClass().getResourceAsStream("/icons/darkPause.png")));
+                                continue;
+                            } else if (node == backward) {
+                                back.setImage(null);
+                                back.setImage(new Image(getClass().getResourceAsStream("/icons/darkBackward.png")));
+                                backward.setStyle("-fx-background-color: #669999;");
+                                continue;
+                            } else if (node == forward) {
+                                fast.setImage(null);
+                                fast.setImage(new Image(getClass().getResourceAsStream("/icons/darkFastward.png")));
+                                forward.setStyle("-fx-background-color: #669999;");
+                                continue;
+                            }
+                            if (node instanceof JFXButton) {
+                                node.setStyle("-fx-background-color: #669999;");
+                            }
+
+                        } // loop for changing theme (main scene)
+                        popupContent.setStyle("-fx-background-color: #669999; -fx-border-color: #669999;");
+
+                        if (playlistController != null) { // changing theme for playlist scene
+                            playlistController.changeThemeForPlaylistScene("-fx-background-color: linear-gradient(to bottom, #444444, #000000);", "-fx-background-color: linear-gradient(to right, #444444, #000000);", "-fx-border-color: green;", "Dark Theme");
+                            playlistController.miniPlay.setImage(null);
+                            playlistController.miniPlay.setImage(new Image(getClass().getResourceAsStream("/icons/darkMiniPlay.png")));
+                            playlistController.miniPause.setImage(null);
+                            playlistController.miniPause.setImage(new Image(getClass().getResourceAsStream("/icons/darkMiniPause.png")));
+
+                            for (Node node : playlistController.playlistSceneFXML.getChildren()) {
+
+                                if (node instanceof JFXButton) {
+                                    node.setStyle("-fx-background-color: #669999;");
+                                }
+                            } // loop ends
+                        }
+                    } // dark theme if
+                } // end
+            });
+
+            VBox.setMargin(option1, new Insets(10, 0, 5, 0)); // setting margine to make UI clean
+            VBox.setMargin(timerLabel, new Insets(10, 0, 0, 0)); // setting margin to tiler label
+
+            minuteSelection = new JFXComboBox<>(); // creating sleep timer
+            minuteSelection.getItems().addAll("5 minutes", "10 minutes", "15 minutes", "30 minutes", "45 minutes", "1 hour", "End of track");
+            minuteSelection.setPromptText("Set timer");
+
+            sleepButton = new JFXButton();
+            sleepButton.setPrefWidth(20);
+            sleepButton.setPrefHeight(24);
+            sleepButton.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/clockOff.png")))));
+
+            HBox sleeperBox = new HBox(10, minuteSelection, sleepButton); // creating HBox
+
+            content.getChildren().addAll(settingLabel, option1, option2, timerLabel, sleeperBox);
+
+            showSettings.getDialogPane().setContent(scrollPane);
+            showSettings.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        } // if ends
+
+        showSettings.show();
+    } // method ends
+
+    // getter for Setting object
+    public void setSettingObject(Settings settings) {
+        this.appSettings = settings;
+        mainSceneFXML.setStyle(appSettings.getTheme());
+        popupContent.setStyle(appSettings.getPopupTheme());
+    } // end
 
 } // class ends here

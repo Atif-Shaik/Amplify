@@ -9,6 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.LogManager;
+
+import com.example.setting.Settings;
+import com.example.setting.SettingsManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -39,6 +42,9 @@ public class Main extends Application {
         // sending stage and scene reference to controller class
         mainSceneController.setStage(stage);
         mainSceneController.setScene(mainScene);
+
+        Settings settings = SettingsManager.loadSettings(); // creating setting object with SettingManager's loadSettings() method
+        mainSceneController.setSettingObject(settings); // sending setting object to MainSceneController for further action if needed
 
         // stage setup
         stage.setScene(mainScene);
