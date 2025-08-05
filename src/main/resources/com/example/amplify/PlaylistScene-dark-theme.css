@@ -1,0 +1,47 @@
+#playlistSceneFXML {
+    -fx-background-color: linear-gradient(to bottom, #444444, #000000);
+}
+#miniAnchor {
+    -fx-background-color: linear-gradient(to right, #444444, #000000);
+    -fx-border-color: green;
+}
+.jfx-rippler {
+    -jfx-rippler-fill: #003333;
+}
+#miniplaypause .jfx-rippler {
+    -jfx-rippler-fill: #404040;
+}
+.jfx-button {
+    -fx-background-color: #669999;
+}
+.transparent-button {
+    -fx-background-color: transparent;
+}
+#miniplaypause {
+    -fx-background-color: transparent;
+	-fx-background-radius: 50;
+	-fx-padding: 10;
+	-fx-pref-width: 54;
+	-fx-pref-height: 54;
+}
+#miniBanner {
+    -fx-effect: dropshadow(gaussian, rgb(0,0,0,0.5), 10,0.5,-5,+5);
+}
+.jfx-combo-box {
+    -fx-prompt-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-control-inner-background: #00e6ac;
+}
+.jfx-combo-box .text {
+    -fx-fill: #ffffff;
+}
+.jfx-combo-box .arrow {
+    -fx-background-color: #ffffff;
+}
+.jfx-combo-box .list-cell:hover {
+    -fx-background-color: #003333;
+}
+.custom-cell {
+    -fx-spacing: 10px;
+}

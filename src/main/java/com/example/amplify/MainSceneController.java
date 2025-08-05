@@ -24,6 +24,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -43,7 +44,7 @@ import java.util.*;
 
 public class MainSceneController {
     @FXML
-    JFXButton playpause, backward, forward, addSong, playlist, volume, likeAndDislike, settings, lyricsAndBanner, sleepButton;
+    JFXButton playpause, backward, forward, addSong, playlist, volume, likeAndDislike, settings, lyricsAndBanner;
     @FXML
     Label song_title, artist_name;
     @FXML
@@ -57,7 +58,7 @@ public class MainSceneController {
     @FXML
     AnchorPane mainSceneFXML;
 
-    JFXButton volumeButton;
+    JFXButton volumeButton, sleepButton;
     JFXComboBox<String> minuteSelection;
     RadioButton option1, option2;
     Dialog<Void> showSettings;
@@ -152,14 +153,15 @@ public class MainSceneController {
         fileChooser.setTitle("Select an audio file");
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Audio Files","*.mp3", "*.wav", "*.aac"));
 
+        play = new ImageView();
+        pause = new ImageView();
+        back = new ImageView();
+        fast = new ImageView();
+
         // load custom icons for buttons
         art = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/banner.png")));
         lyrics = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/lyrics.png"))));
         setting = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/settings.png"))));
-        play = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/play.png"))));
-        pause = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/pause.png"))));
-        back = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/backward.png"))));
-        fast = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/forward.png"))));
         add = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/add.png"))));
         list = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/playlist.png"))));
         speaker = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/speaker.png"))));
@@ -192,6 +194,7 @@ public class MainSceneController {
         volumePercent.setLayoutX(196);
 
         popupContent.getStyleClass().add("jfx-popup-container");
+        popupContent.getStyleClass().add("popup-pane");
         popupContent.getChildren().addAll(volumeButton, volumeSlider, volumePercent);
 
         // add custom icons to buttons
@@ -206,14 +209,7 @@ public class MainSceneController {
         likeAndDislike.setGraphic(dislike);
 
         // add css styles to buttons
-        lyricsAndBanner.getStyleClass().add("custom-button");
-        settings.getStyleClass().add("custom-button");
-        playlist.getStyleClass().add("custom-button");
-        addSong.getStyleClass().add("custom-button");
-        forward.getStyleClass().add("custom-effect1");
-        backward.getStyleClass().add("custom-effect1");
-        volume.getStyleClass().add("custom-effect1");
-        likeAndDislike.getStyleClass().add("custom-effect1");
+        volumeButton.getStyleClass().add("transparent-button");
 
         // add action listeners to buttons
         playlist.setOnAction(event -> switchToPlaylistScene());
@@ -724,15 +720,20 @@ public class MainSceneController {
                 Parent root = loader.load();
                 playlistScene = new Scene(root, 500, 600);
                 root.requestFocus(); // requesting focus for key events
-                playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/PlaylistScene.css")));
+
+                if (appSettings.getTheme().equals("Light Theme")) {
+                    playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/PlaylistScene-light-theme.css")));
+                } else if (appSettings.getTheme().equals("Dark Theme")) {
+                    playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/PlaylistScene-dark-theme.css")));
+                }
+
                 // loading playlist controller
                 playlistController = loader.getController();
                 playlistController.setStage(mainStage); // sending stage reference only one time
                 playlistController.setScene(mainScene); // sending scene reference only one time
                 playlistController.setController(this); // sending main scene controller referance
-
-                // changing selected app theme for playlistscene
-                playlistController.changeThemeForPlaylistScene(appSettings.getTheme(), appSettings.getMiniAnchorTheme(), appSettings.getMiniAnchorBorderTheme(), appSettings.getComboboxTheme());
+                playlistController.changeComboBoxLineColor(appSettings.getTheme()); // changing the color of combobox line
+                playlistController.loadIcons(appSettings.getTheme());
 
                 // activating playlist scene
                 mainStage.setScene(playlistScene);
@@ -1124,16 +1125,16 @@ public class MainSceneController {
             settingLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
             timerLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-            option1 = new RadioButton("Default Theme");
+            option1 = new RadioButton("Light Theme");
             option2 = new RadioButton("Dark Theme");
 
             ToggleGroup group = new ToggleGroup();
             option1.setToggleGroup(group);
             option2.setToggleGroup(group);
             // setting the selected or default theme selected
-            if (appSettings.getTheme().equals("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));")) {
+            if (appSettings.getTheme().equals("Light Theme")) {
                 option1.setSelected(true);
-            } else if (appSettings.getTheme().equals("-fx-background-color: linear-gradient(to bottom, #444444, #000000);")) {
+            } else if (appSettings.getTheme().equals("Dark Theme")) {
                 option2.setSelected(true);
             } // end
 
@@ -1141,87 +1142,47 @@ public class MainSceneController {
             group.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
                 if (newToggle != null) {
                     RadioButton selected = (RadioButton) newToggle; // casting toggle group selected to radiobutton
-                    System.out.println(selected.getText());
-                    if ("Default Theme".equals(selected.getText())) {
-                        mainSceneFXML.setStyle("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));");
-                        for (Node node : mainSceneFXML.getChildren()) {
-                            if (node == playpause) {
-                                play.setImage(null);
-                                play.setImage(new Image(getClass().getResourceAsStream("/icons/play.png")));
-                                pause.setImage(null);
-                                pause.setImage(new Image(getClass().getResourceAsStream("/icons/pause.png")));
-                                continue;
-                            } else if (node == backward) {
-                                back.setImage(null);
-                                back.setImage(new Image(getClass().getResourceAsStream("/icons/backward.png")));
-                                backward.setStyle("-fx-background-color: cyan;");
-                                continue;
-                            } else if (node == forward) {
-                                fast.setImage(null);
-                                fast.setImage(new Image(getClass().getResourceAsStream("/icons/forward.png")));
-                                forward.setStyle("-fx-background-color: cyan;");
-                                continue;
-                            }
 
-                            if (node instanceof JFXButton) {
-                                node.setStyle("-fx-background-color: cyan;");
-                            }
-                        } // loop end
-                        popupContent.setStyle("-fx-background-color: cyan; -fx-border-color: cyan;");
+                    if ("Light Theme".equals(selected.getText())) {
+                        // clearing the previous theme and loading dark theme
+                        mainScene.getStylesheets().clear();
+                        mainScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/MainScene-light-theme.css")));
+
+                        appSettings.setTheme("Light Theme");
+                        appSettings.saveSettings(); // updating the json file
+
+                        // changing icons to match theme
+                        loadIcons("Light Theme");
+
                         if (playlistController != null) { // changing default theme for playlistscene
-                            playlistController.changeThemeForPlaylistScene("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));", "-fx-background-color: linear-gradient(to right, rgb(173,216,230), rgb(0,0,139));", "-fx-border-color: white;", "Default Theme");
-                            playlistController.miniPlay.setImage(null);
-                            playlistController.miniPlay.setImage(new Image(getClass().getResourceAsStream("/icons/miniplay.png")));
-                            playlistController.miniPause.setImage(null);
-                            playlistController.miniPause.setImage(new Image(getClass().getResourceAsStream("/icons/minipause.png")));
+                            // clearing previous theme and applying dark theme to playlist scene
+                            playlistScene.getStylesheets().clear();
+                            playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/PlaylistScene-light-theme.css")));
+                            playlistController.changeComboBoxLineColor("Light Theme");
 
-                            for (Node node : playlistController.playlistSceneFXML.getChildren()) {
-                                if (node instanceof JFXButton) {
-                                    node.setStyle("-fx-background-color: cyan;");
-                                }
-                            } // loop ends
-                        }
+                            // changing icons to match theme
+                            playlistController.loadIcons("Light Theme");
+                        } // end
                     } else if ("Dark Theme".equals(selected.getText())) {
-                        mainSceneFXML.setStyle("-fx-background-color: linear-gradient(to bottom, #444444, #000000);");
-                        for (Node node : mainSceneFXML.getChildren()) {
-                            if (node == playpause) {
-                                play.setImage(null);
-                                play.setImage(new Image(getClass().getResourceAsStream("/icons/darkPlay.png")));
-                                pause.setImage(null);
-                                pause.setImage(new Image(getClass().getResourceAsStream("/icons/darkPause.png")));
-                                continue;
-                            } else if (node == backward) {
-                                back.setImage(null);
-                                back.setImage(new Image(getClass().getResourceAsStream("/icons/darkBackward.png")));
-                                backward.setStyle("-fx-background-color: #669999;");
-                                continue;
-                            } else if (node == forward) {
-                                fast.setImage(null);
-                                fast.setImage(new Image(getClass().getResourceAsStream("/icons/darkFastward.png")));
-                                forward.setStyle("-fx-background-color: #669999;");
-                                continue;
-                            }
-                            if (node instanceof JFXButton) {
-                                node.setStyle("-fx-background-color: #669999;");
-                            }
+                        // clearing the previous theme and loading dark theme
+                        mainScene.getStylesheets().clear();
+                        mainScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/MainScene-dark-theme.css")));
 
-                        } // loop for changing theme (main scene)
-                        popupContent.setStyle("-fx-background-color: #669999; -fx-border-color: #669999;");
+                        appSettings.setTheme("Dark Theme");
+                        appSettings.saveSettings(); // updating the json file
+
+                        // changing the icons to match dark theme
+                        loadIcons("Dark Theme");
 
                         if (playlistController != null) { // changing theme for playlist scene
-                            playlistController.changeThemeForPlaylistScene("-fx-background-color: linear-gradient(to bottom, #444444, #000000);", "-fx-background-color: linear-gradient(to right, #444444, #000000);", "-fx-border-color: green;", "Dark Theme");
-                            playlistController.miniPlay.setImage(null);
-                            playlistController.miniPlay.setImage(new Image(getClass().getResourceAsStream("/icons/darkMiniPlay.png")));
-                            playlistController.miniPause.setImage(null);
-                            playlistController.miniPause.setImage(new Image(getClass().getResourceAsStream("/icons/darkMiniPause.png")));
+                            // clearing previous theme and applying dark theme to playlist scene
+                            playlistScene.getStylesheets().clear();
+                            playlistScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/PlaylistScene-dark-theme.css")));
+                            playlistController.changeComboBoxLineColor("Dark Theme");
 
-                            for (Node node : playlistController.playlistSceneFXML.getChildren()) {
-
-                                if (node instanceof JFXButton) {
-                                    node.setStyle("-fx-background-color: #669999;");
-                                }
-                            } // loop ends
-                        }
+                            // changing icon to match theme
+                            playlistController.loadIcons("Dark Theme");
+                        } // if ends
                     } // dark theme if
                 } // end
             });
@@ -1237,6 +1198,7 @@ public class MainSceneController {
             sleepButton.setPrefWidth(20);
             sleepButton.setPrefHeight(24);
             sleepButton.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/clockOff.png")))));
+            sleepButton.getStyleClass().add("transparent-button");
 
             HBox sleeperBox = new HBox(10, minuteSelection, sleepButton); // creating HBox
 
@@ -1252,8 +1214,28 @@ public class MainSceneController {
     // getter for Setting object
     public void setSettingObject(Settings settings) {
         this.appSettings = settings;
-        mainSceneFXML.setStyle(appSettings.getTheme());
-        popupContent.setStyle(appSettings.getPopupTheme());
     } // end
+
+    public void loadIcons(String theme) {
+       if (theme.equals("Light Theme")) {
+           play.setImage(null);
+           play.setImage(new Image(getClass().getResourceAsStream("/icons/play.png")));
+           pause.setImage(null);
+           pause.setImage(new Image(getClass().getResourceAsStream("/icons/pause.png")));
+           back.setImage(null);
+           back.setImage(new Image(getClass().getResourceAsStream("/icons/backward.png")));
+           fast.setImage(null);
+           fast.setImage(new Image(getClass().getResourceAsStream("/icons/forward.png")));
+       } else if (theme.equals("Dark Theme")) {
+           play.setImage(null);
+           play.setImage(new Image(getClass().getResourceAsStream("/icons/darkPlay.png")));
+           pause.setImage(null);
+           pause.setImage(new Image(getClass().getResourceAsStream("/icons/darkPause.png")));
+           back.setImage(null);
+           back.setImage(new Image(getClass().getResourceAsStream("/icons/darkBackward.png")));
+           fast.setImage(null);
+           fast.setImage(new Image(getClass().getResourceAsStream("/icons/darkFastward.png")));
+       }
+    } // end method
 
 } // class ends here

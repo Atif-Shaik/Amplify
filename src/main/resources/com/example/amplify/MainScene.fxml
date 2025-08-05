@@ -7,31 +7,12 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.paint.Color?>
-<?import javafx.scene.paint.LinearGradient?>
-<?import javafx.scene.paint.Stop?>
 <?import javafx.scene.text.Font?>
 
 <AnchorPane fx:id="mainSceneFXML" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.amplify.MainSceneController">
    <children>
       <JFXSlider fx:id="slider" layoutX="21.0" layoutY="406.0" prefHeight="14.0" prefWidth="457.0" />
-      <JFXButton fx:id="playpause" buttonType="RAISED" layoutX="177.0" layoutY="440.0" prefHeight="128.0" prefWidth="128.0">
-         <ripplerFill>
-            <LinearGradient endX="1.0" endY="1.0">
-               <stops>
-                  <Stop>
-                     <color>
-                        <Color red="0.04981589689850807" green="0.05985127389431" blue="0.35087719559669495" />
-                     </color>
-                  </Stop>
-                  <Stop offset="1.0">
-                     <color>
-                        <Color red="1.0" green="1.0" blue="1.0" />
-                     </color>
-                  </Stop>
-               </stops>
-            </LinearGradient>
-         </ripplerFill></JFXButton>
+      <JFXButton fx:id="playpause" buttonType="RAISED" layoutX="177.0" layoutY="440.0" prefHeight="128.0" prefWidth="128.0" />
       <JFXButton fx:id="backward" layoutX="55.0" layoutY="472.0" prefHeight="64.0" prefWidth="64.0" ripplerFill="BLACK" />
       <JFXButton fx:id="forward" layoutX="364.0" layoutY="472.0" prefHeight="64.0" prefWidth="64.0" ripplerFill="BLACK" />
       <ImageView fx:id="banner" fitHeight="256.0" fitWidth="256.0" layoutX="122.0" layoutY="14.0" pickOnBounds="true" preserveRatio="true">

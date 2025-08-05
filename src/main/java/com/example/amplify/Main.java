@@ -35,16 +35,23 @@ public class Main extends Application {
         FXMLLoader loader = new FXMLLoader(Main.class.getResource("/com/example/amplify/MainScene.fxml"));
         Parent root = loader.load();
         Scene mainScene = new Scene(root, 500,600);
-        root.requestFocus(); // requesting focus for key events
-        mainScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/mainScene.css")));
+        root.requestFocus(); // requesting focus for key
+
+        Settings settings = SettingsManager.loadSettings(); // creating setting object with SettingManager's loadSettings() method
+
+        if (settings.getTheme().equals("Light Theme")) {
+            mainScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/MainScene-light-theme.css")));
+        } else if (settings.getTheme().equals("Dark Theme")) {
+            mainScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/MainScene-dark-theme.css")));
+        }
+
         // loading the controller class
         MainSceneController mainSceneController = loader.getController();
         // sending stage and scene reference to controller class
         mainSceneController.setStage(stage);
         mainSceneController.setScene(mainScene);
-
-        Settings settings = SettingsManager.loadSettings(); // creating setting object with SettingManager's loadSettings() method
         mainSceneController.setSettingObject(settings); // sending setting object to MainSceneController for further action if needed
+        mainSceneController.loadIcons(settings.getTheme());
 
         // stage setup
         stage.setScene(mainScene);

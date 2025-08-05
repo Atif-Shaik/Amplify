@@ -19,7 +19,7 @@ public class SettingsManager {
                 reader.close();
                 return settings;
             } else {
-                Settings defaultSetting = new Settings("-fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));","-fx-background-color: linear-gradient(to right, rgb(173,216,230), rgb(0,0,139));", "-fx-border-color: white;", "-fx-background-color: cyan; -fx-border-color: cyan;", "Default Theme"); // setting default theme
+                Settings defaultSetting = new Settings("Light Theme"); // setting default theme
                 saveSettings(defaultSetting);
                 return defaultSetting;
             }

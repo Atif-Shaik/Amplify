@@ -1,0 +1,52 @@
+#mainSceneFXML {
+    -fx-background-color: linear-gradient(to bottom, #444444, #000000);
+}
+#banner{
+	-fx-background-color: white;
+	-fx-effect: dropshadow(gaussian, rgb(0,0,0,0.5), 10,0.5,-5,+5);
+}
+.jfx-rippler {
+    -jfx-rippler-fill: #003333;
+}
+#playpause .jfx-rippler {
+    -jfx-rippler-fill: #9fbfdf;
+}
+.jfx-button {
+    -fx-background-color: #669999;
+}
+.transparent-button {
+    -fx-background-color: transparent;
+}
+#playpause {
+    -fx-background-color: transparent;
+}
+.jfx-popup-container { /* this is a common style the applies regardless */
+    -fx-padding: 0;
+    -fx-background-radius: 1px;
+    -fx-border-radius: 1px;
+    -fx-border-width: 1px;
+    -fx-background-insets: -1;
+    -fx-border-insets: -1;
+    -fx-effect: dropshadow(gaussian, rgb(0,0,0,0.5), 4,0.3,-3,0);
+}
+.popup-pane {
+    -fx-background-color: #669999;
+    -fx-border-color: #669999;
+}
+.font-for-volume-percent { /* this is a common style the applies regardless */
+    -fx-font-family: "Candara";
+    -fx-font-size: 20;
+    -fx-font-weight: bold;
+}
+.jfx-slider {
+    -jfx-default-thumb: #669999;
+}
+.jfx-slider .thumb {
+    -fx-background-color: #669999;
+}
+.jfx-toggle-button {
+    -jfx-toggle-color: #009688;
+    -jfx-toggle-line-color: #77c2bb;
+    -jfx-untoggle-color: #fafafa;
+    -jfx-untoggle-line-color: #999999;
+}

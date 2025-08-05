@@ -5,15 +5,24 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventType;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -27,6 +36,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
+import javafx.util.Callback;
 
 import java.awt.*;
 import java.io.File;
@@ -78,6 +88,8 @@ public class PlaylistController {
 
     ImageView backIcon, miniPlay, miniPause, infoIcon, insta, linkedin;
     HBox socialmediaHolder;
+    
+
     public void initialize() {
         soundLoader = new SoundLoader();
         fileChooser = new FileChooser();
@@ -88,24 +100,34 @@ public class PlaylistController {
         playlists.setPromptText("Select Playlist");
         loadPlaylistNames();
 
+        ContextMenu menu = new ContextMenu();
+        MenuItem rename = new MenuItem("Rename playlist");
+        MenuItem shuffle = new MenuItem("Shuffle the playlist");
+        MenuItem delete = new MenuItem("Delete the playlist");
+        menu.getItems().addAll(rename, shuffle, delete);
+
+        //playlists.setContextMenu(menu);
+        playlists.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+              //  playlists.getItems().clear();
+                event.consume();
+                System.out.println("Ok");
+            }
+        });
+
         // getting icons
         backIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/back.png"))));
         back.setGraphic(backIcon);
 
-        infoIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/info.png"))));
+        infoIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/managePlaylist.png"))));
         info.setGraphic(infoIcon);
 
-        miniPlay = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/miniplay.png"))));
-        miniPause = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/minipause.png"))));
-        miniplaypause.setGraphic(miniPlay);
+        miniPlay = new ImageView();
+        miniPause = new ImageView();
 
+        miniplaypause.setGraphic(miniPlay); // this is important
         // styling section
         miniplaypause.getStyleClass().add("round-button");
-        back.getStyleClass().add("custom-button");
-        play.getStyleClass().add("custom-button");
-        add.getStyleClass().add("custom-button");
-        create.getStyleClass().add("custom-button");
-        info.getStyleClass().add("custom-button");
 
         // add listener section
         back.setOnAction(event -> openMainScene());
@@ -530,6 +552,21 @@ public class PlaylistController {
                     hBox.getStyleClass().add("custom-cell");
                     setText(null); // this is important it does not add the default toString method's content of class
                     setGraphic(hBox);
+
+                    ContextMenu menu = new ContextMenu();
+                    MenuItem view = new MenuItem("Shuffle the playlist");
+                    view.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/shuffle.png")))));
+                    view.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+
+                    MenuItem loop = new MenuItem("Loop the song");
+                    loop.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/loop.png")))));
+                    loop.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+
+                    MenuItem delete = new MenuItem("Delete the song");
+                    delete.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/delete.png")))));
+                    delete.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+                    menu.getItems().addAll(view, loop, delete);
+                    setContextMenu(menu);
                 } // else ends
 
             } // method
@@ -638,67 +675,50 @@ public class PlaylistController {
 
     public void showInfo() {
         Dialog<Void> infoDialog = new Dialog<>();
-        infoDialog.setTitle("About AmplifyMax");
+        infoDialog.setTitle("Manage Playlists");
 
-        VBox allContent = new VBox(10);
-        Text heading1 = new Text("AmplifyMax key features");
-        heading1.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
+        VBox allPlaylists = new VBox();
+        allPlaylists.setPrefSize(360, 200);
+        ScrollPane scrollPane = new ScrollPane(allPlaylists);
+        scrollPane.setPrefSize(400,200);
 
-        Text features = getText();
-        features.setWrappingWidth(360);
+        for (String playlist: playlists.getItems()) {
+            HBox leftHBox = new HBox();
+            leftHBox.setPrefSize(280, 40);
+            leftHBox.setAlignment(Pos.CENTER_LEFT);
+            leftHBox.getChildren().add(new Label(playlist));
 
-        Text policy = new Text("Privacy Policy");
-        policy.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
+            HBox rightHBox = new HBox();
+            rightHBox.setPrefSize(80,40);
+            rightHBox.setAlignment(Pos.CENTER_RIGHT);
+            if (!playlist.equals("LIKED SONGS")) {
+                JFXButton deletButton = new JFXButton();
+                deletButton.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/deletePlaylist.png")))));
+                deletButton.getStyleClass().add("transparent-button");
 
-        Text heading2 = new Text("Bug and Glitch Reporting");
-        heading2.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
+                JFXButton edit = new JFXButton();
+                edit.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/edit.png")))));
+                edit.getStyleClass().add("transparent-button");
+                rightHBox.getChildren().addAll(edit, deletButton);
+            }
+            HBox hBox = new HBox();
+            hBox.getChildren().addAll(leftHBox, rightHBox);
+            hBox.setPrefSize(300,40);
 
-        Hyperlink policyLink = new Hyperlink("AmplifyMax Privacy Policy");
-        policyLink.setOnAction(e -> openLinks("https://atif-shaik.github.io/AmplifMax-privacy-policy/"));
-        policyLink.setStyle("-fx-font-size: 18px;");
-
-        Text reportText = new Text("Please report any bugs or glitches you encounter while using the application. Your feedback is valuable in helping us improve its performance and stability.");
-        reportText.setWrappingWidth(370);
-        reportText.setStyle("-fx-font-size: 18px;");
-
-        Hyperlink emailLink = new Hyperlink("Email: atifshaik78692@gmail.com");
-        emailLink.setOnAction(e -> openLinks("mailto:atifshaik78692@gmail.com"));
-        emailLink.setStyle("-fx-font-size: 18px;");
-
-        Text heading3 = new Text("Follow Us");
-        heading3.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
-
-        Text heading4 = new Text("Resources Attribution");
-        heading4.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true; ");
-
-        Text subHeading1 = new Text("This app uses icons from Freepik.");
-        subHeading1.setStyle("-fx-font-size: 18px;");
-
-        Text subHeading2 = new Text("The original creators and copyright holders are acknowledged and appreciated.");
-        subHeading2.setStyle("-fx-font-size: 18px;");
-        subHeading2.setWrappingWidth(360);
-
-        Hyperlink freepik = new Hyperlink("www.freepik.com");
-        freepik.setOnAction(e -> openLinks("https://www.freepik.com"));
-        freepik.setStyle("-fx-font-size: 18px;");
-
-        Text heading5 = new Text("App version");
-        heading5.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-underline: true;");
-
-        Text version = new Text("1.0.0.0");
-        version.setStyle("-fx-font-size: 18px;");
-
-        allContent.getChildren().addAll(heading1, features, policy, policyLink, heading2, reportText, emailLink, heading3, socialmediaHolder, heading4, subHeading1, subHeading2, freepik, heading5, version);
-
-        ScrollPane scrollPane = new ScrollPane(allContent);
-        scrollPane.setPrefSize(400,400);
+            allPlaylists.getChildren().add(hBox);
+        } // loop ends
 
         infoDialog.initOwner(mainStage);
         infoDialog.getDialogPane().setContent(scrollPane);
-        infoDialog.getDialogPane().getButtonTypes().add(ButtonType.OK);
-        infoDialog.showAndWait();
+        ButtonType cancel = ButtonType.CANCEL;
+        infoDialog.getDialogPane().getButtonTypes().add(cancel);
+        Button button = (Button) infoDialog.getDialogPane().lookupButton(cancel);
+        button.setManaged(false);
+
+        infoDialog.show();
     } // method ends
 
+    // remote it
     // this method opens links pressed by users
     public void openLinks(String url) {
         try {
@@ -710,16 +730,6 @@ public class PlaylistController {
             alert.setContentText("Unable to open browser!");
             alert.showAndWait();
         }
-    } // method ends
-
-    private static Text getText() {
-        Text appWork = new Text("➢ Click on the add button to load a song" +
-                "\n➢ Press Shift + Delete to delete playlist" +
-                "\n➢ Press Ctrl + Delete to delete song" +
-                "\n➢ Press Ctrl + p to play or pause" +
-                "\n➢ Press Left or Right button to change song");
-        appWork.setStyle("-fx-font-size: 18px; -fx-padding: 5px 0;");
-        return appWork;
     } // method ends
 
     public void removeCorruptedSongAndShowError(int index) {
@@ -754,5 +764,29 @@ public class PlaylistController {
             playlists.setStyle("-fx-control-inner-background: #00e6ac;");
         }
     } // end
+
+    public void changeComboBoxLineColor(String theme) {
+        if (theme.equals("Light Theme")) {
+            playlists.setFocusColor(Paint.valueOf("#4059A9")); // changing the color of underline of combobox
+            playlists.setUnFocusColor(Paint.valueOf("#4059A9"));
+        } else if (theme.equals("Dark Theme")) {
+            playlists.setFocusColor(javafx.scene.paint.Paint.valueOf("#008000"));
+            playlists.setUnFocusColor(Paint.valueOf("#008000"));
+        }
+    } // ends
+
+    public void loadIcons(String theme) {
+        if (theme.equals("Light Theme")) {
+            miniPlay.setImage(null);
+            miniPlay.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/miniplay.png"))));
+            miniPause.setImage(null);
+            miniPause.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/minipause.png"))));
+        } else if (theme.equals("Dark Theme")) {
+            miniPlay.setImage(null);
+            miniPlay.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/darkMiniPlay.png"))));
+            miniPause.setImage(null);
+            miniPause.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/darkMiniPause.png"))));
+        }
+    } // method ends
 
 } // class ends
