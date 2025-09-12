@@ -47,7 +47,7 @@ import java.util.*;
 
 public class PlaylistController {
     @FXML
-    JFXButton back, miniplaypause, play, add, create, manage;
+    JFXButton back, miniplaypause, load, add, create, manage;
     @FXML
     Label miniTitle, miniArtist, maxLabel;
     @FXML
@@ -123,7 +123,7 @@ public class PlaylistController {
         // add listener section
         back.setOnAction(event -> openMainScene());
         miniplaypause.setOnAction(event -> miniPlayPauseController());
-        play.setOnAction(event -> playPlaylist());
+        load.setOnAction(event -> loadPlaylist());
         listView.setItems(objectsOfOpendPlaylist); // binding observable list to listview
         listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
@@ -170,6 +170,13 @@ public class PlaylistController {
         input.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) create.requestFocus();
         });
+        input.setTextFormatter( new TextFormatter<String>(change -> {
+            String newText = change.getControlNewText(); // allow letters, numbers, and space
+            if (newText.matches("[a-zA-Z0-9\\s]*")) {
+                return  change; // accept
+            }
+            return null; // reject
+        }));
         maxLabel.setVisible(false);
         input.setStyle("-fx-font-size: 15px;");
 
@@ -428,7 +435,7 @@ public class PlaylistController {
     } // method ends here
 
     // this method loads playlist into listview 
-    public void playPlaylist() {
+    public void loadPlaylist() {
         selection = playlists.getValue(); // getting playlist name from combo box
         if (selection == null) { // checks if selection is not null (means no playlist is selected)
             Alert alert = new Alert(Alert.AlertType.NONE);
@@ -723,8 +730,10 @@ public class PlaylistController {
         if (!mainSceneController.isShuffled) {
            mainSceneController.isShuffled = true;
            mainSceneController.shuffle.setSelected(true);
-           mainSceneController.isLooped = false;
-           mainSceneController.loop.setSelected(false);
+           if (!(mainSceneController.opendPlaylist.size() == 1) && mainSceneController.isLooped) {
+               mainSceneController.isLooped = false;
+               mainSceneController.loop.setSelected(false);
+           } // end (This if ensures that, if there is only one song in playlist and loop is on then when user hit shuffle button the action should not turn off the loop)
 
            if(!mainSceneController.opendPlaylist.isEmpty() && mainSceneController.opendPlaylist.size() > 1) {
                Alert alert = new Alert(Alert.AlertType.NONE);
@@ -1155,14 +1164,19 @@ public class PlaylistController {
                             } catch (SQLException ex) {
                                 throw new RuntimeException(ex);
                             }
+                            String selectedPlaylist = playlists.getValue();
                             int index = playlists.getItems().indexOf(playlistName);
                             if (index != -1) {
                                 playlists.getItems().set(index, newName.toUpperCase().replace("_", " "));
+                                if (selectedPlaylist.equals(playlistName))  {
+                                    playlists.getSelectionModel().select(index); // if the renamed playlist is selected in combo box then this is crucial
+                                    loadedPlaylist = newName.toUpperCase().replace("_", " ");
+                                }
                             }
                             label.set(newName.toUpperCase().replace("_", " "));
                             dialog.close();
                         } // if ends
-                    });
+                    }); // rename button onAction end
                     StackPane base = new StackPane(textField, max);
                     StackPane.setAlignment(max, Pos.CENTER_RIGHT); // putting max label on TextField
                     StackPane.setMargin(max, new Insets(0, 6, 0, 0)); // adjusting margin
@@ -1184,6 +1198,13 @@ public class PlaylistController {
                             max.setVisible(false);
                         }
                     });
+                    textField.setTextFormatter( new TextFormatter<String>(change -> {
+                        String newText = change.getControlNewText(); // allow letters, numbers, and space
+                        if (newText.matches("[a-zA-Z0-9\\s]*")) {
+                            return  change; // accept
+                        }
+                        return null; // reject
+                    }));
                     textField.setStyle("-fx-font-size: 15px;");
 
                     ButtonType close = ButtonType.CLOSE;

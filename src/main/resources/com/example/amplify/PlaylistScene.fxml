@@ -35,7 +35,7 @@
       <JFXButton fx:id="back" buttonType="RAISED" ellipsisString="" layoutX="16.0" layoutY="27.0" prefHeight="32.0" prefWidth="32.0" />
       <JFXListView fx:id="listView" layoutX="16.0" layoutY="120.0" prefHeight="334.0" prefWidth="467.0" />
       <JFXComboBox fx:id="playlists" layoutX="16.0" layoutY="79.0" prefHeight="32.0" prefWidth="229.0" />
-      <JFXButton fx:id="play" buttonType="RAISED" layoutX="255.0" layoutY="79.0" prefHeight="32.0" prefWidth="110.0" ripplerFill="#6b7dcc" text="Load">
+      <JFXButton fx:id="load" buttonType="RAISED" layoutX="255.0" layoutY="79.0" prefHeight="32.0" prefWidth="110.0" ripplerFill="#6b7dcc" text="Load">
          <font>
             <Font name="System Bold" size="14.0" />
          </font>
