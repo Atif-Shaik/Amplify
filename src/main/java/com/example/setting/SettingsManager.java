@@ -12,6 +12,7 @@ public class SettingsManager {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public static Settings loadSettings() {
+        File file = new File(settingFilePath);
         try {
             if (Files.exists(Paths.get(settingFilePath))) { // this reads the settings from json
                 Reader reader = new FileReader(settingFilePath);
@@ -23,6 +24,7 @@ public class SettingsManager {
                 saveSettings(defaultSetting);
                 return defaultSetting;
             }
+
         } catch (IOException e) {
             return new Settings();
         }

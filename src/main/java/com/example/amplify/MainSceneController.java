@@ -1,7 +1,6 @@
 package com.example.amplify;
 
 import com.example.setting.Settings;
-import com.example.setting.SettingsManager;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
 import com.jfoenix.controls.*;
@@ -13,7 +12,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -24,20 +22,16 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.MediaPlayer;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import javax.sound.sampled.Line;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
@@ -229,21 +223,68 @@ public class MainSceneController {
                 loop.setSelected(false); // turning loop to off when shuffle is on
             }
             if (isShuffled && !opendPlaylist.isEmpty() && opendPlaylist.size() == 1) { // this if handles shuffle when there is only one song in the playlist
-                Alert alert = new Alert(Alert.AlertType.WARNING);
+                Alert alert = new Alert(Alert.AlertType.NONE);
                 alert.initOwner(mainStage);
-                alert.setTitle("Error");
-                alert.setHeaderText("Shuffle requires more than one song in the playlist");
-                alert.setContentText("Please add more songs to " + playlistController.playlists.getValue() + " playlist");
+                alert.setTitle("Shuffle Error");
+
+                ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+                errorIcon.setFitHeight(54);
+                errorIcon.setFitWidth(54);
+                HBox hBox = new HBox(15);
+                hBox.setPrefSize(420,70);
+                hBox.setPadding(new Insets(20, 0,0,20));
+
+                VBox vBox = new VBox(1);
+                Label title = new Label("Unable to shuffle playlist!");
+                title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                Label content = new Label("Please add more songs to ");
+                content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                Label content1 = new Label(playlistController.playlists.getValue());
+                content1.setStyle("-fx-font-weight: bold; -fx-font-style: italic; -fx-text-fill: blue;");
+
+                Label content2 = new Label(" playlist.");
+                content2.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+
+                HBox hBox1 = new HBox();
+                hBox1.getChildren().addAll(content, content1, content2);
+                vBox.getChildren().addAll(title, hBox1);
+
+                hBox.getChildren().addAll(errorIcon, vBox);
+                alert.getDialogPane().setContent(hBox);
+                alert.setHeaderText(null);
+
+                ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+                alert.getButtonTypes().add(ok);
+
                 alert.showAndWait();
                 isShuffled = false;
                 shuffle.setSelected(false);
             } // if ends
             if (isShuffled && opendPlaylist.isEmpty()){ // this if handles shuffle when playlist is not selected
-                Alert alert = new Alert(Alert.AlertType.WARNING);
+                Alert alert = new Alert(Alert.AlertType.NONE);
                 alert.initOwner(mainStage);
-                alert.setTitle("Error");
-                alert.setHeaderText("Unable to shuffle playlist.");
-                alert.setContentText("Please load a playlist to enable this feature.");
+                alert.setTitle("Shuffle Error");
+                ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+                errorIcon.setFitWidth(54);
+                errorIcon.setFitHeight(54);
+                HBox hBox = new HBox(15);
+                hBox.setPrefSize(390,70);
+                hBox.setPadding(new Insets(20, 0,0,20));
+
+                VBox vBox = new VBox(1);
+                Label title = new Label("Unable to shuffle playlist!");
+                title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                Label content = new Label("Please load a playlist to enable this feature.");
+                content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                vBox.getChildren().addAll(title, content);
+
+                hBox.getChildren().addAll(errorIcon, vBox);
+                alert.getDialogPane().setContent(hBox);
+                alert.setHeaderText(null);
+
+                ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+                alert.getButtonTypes().add(ok);
+
                 alert.showAndWait();
                 isShuffled = false;
                 shuffle.setSelected(false);
@@ -367,7 +408,7 @@ public class MainSceneController {
             if (file.exists()) { // this if ensures that when the app first installed the app will not crash due to absent od appdata.db which has not created yet
                 try (Connection connection = DriverManager.getConnection(url)) {
                     String sql = "SELECT file_paths FROM liked_songs;";
-                    String sql1 = "SELECT list, count FROM songs;";
+                    String sql1 = "SELECT songPath, songCount FROM songsInAppData;";
                     Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(sql);
 
@@ -378,8 +419,8 @@ public class MainSceneController {
                         likedList.add(data); // remenber to check file availability here later
                     } // loop ends
                     while (resultSet1.next()) { // loop for loading all songs with their traces
-                        String song = resultSet1.getString("list");
-                        Integer count = resultSet1.getInt("count");
+                        String song = resultSet1.getString("songPath");
+                        Integer count = resultSet1.getInt("songCount");
 
                         URI uri = new URI(song);
                         File path = new File(uri);
@@ -391,7 +432,7 @@ public class MainSceneController {
                 }
                 if (!invalidSongTrace.isEmpty()) {
                     for (var str : invalidSongTrace) {
-                        deleteSongsTable(str);
+                        deleteSongsTableSingleCountSong(str);
                     } // for loop
                     invalidSongTrace.clear();
                 } // if for deleting invalid songs
@@ -424,7 +465,7 @@ public class MainSceneController {
 
     public void addNewSongTrace(String str) {
         try (Connection connection = DriverManager.getConnection(url)){
-            String sql = "INSERT INTO songs (list, count)" +
+            String sql = "INSERT INTO songsInAppData (songPath, songCount)" +
                     "VALUES (?, ?);";
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setString(1, str);
@@ -543,7 +584,7 @@ public class MainSceneController {
                     if (count > 1) {
                         songsInMusicFolder.put(filePath, count - 1);
                     } else if (count == 1) {
-                        deleteSongsTable(filePath);
+                        deleteSongsTableSingleCountSong(filePath);
                         songsInMusicFolder.remove(filePath);
                     }
                 }
@@ -775,7 +816,6 @@ public class MainSceneController {
 
                                        statement.execute(sql1);
                                        preparedStatement.executeUpdate();
-
                                    } catch (SQLException e) {
                                        throw new RuntimeException(e);
                                    }
@@ -1071,34 +1111,34 @@ public class MainSceneController {
             if (count > 1) {
                 count--;
                 songsInMusicFolder.put(str, count);
-                updateSongsTable(str);
+                updateSongsTable(str); // updates the song count if more than 1
                 result = false; // false means the song is used in more than one playlist
             } else if (count == 1){
-                deleteSongsTable(str);
+                deleteSongsTableSingleCountSong(str);
                 result = true; // true means the song is used in only one playlist so it can be deleted
             }
         }
         return result;
     } // method ends here
 
-    public void deleteSongsTable(String str) {
+    public void deleteSongsTableSingleCountSong(String songPath) {
        try (Connection connection = DriverManager.getConnection(url)){
-           String sql = "DELETE FROM songs WHERE list = ?;";
+           String sql = "DELETE FROM songsInAppData WHERE songPath = ?;";
            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-           preparedStatement.setString(1, str);
+           preparedStatement.setString(1, songPath);
            preparedStatement.executeUpdate();
        } catch (Exception e) {
            throw new RuntimeException(e);
        }
     } // method ends
 
-    public void updateSongsTable(String str) {
-        if (songsInMusicFolder.containsKey(str)) {
-            int newCount = songsInMusicFolder.get(str);
+    public void updateSongsTable(String songPath) {
+        if (songsInMusicFolder.containsKey(songPath)) {
+            int newCount = songsInMusicFolder.get(songPath); // you have to update the songsInMusicFolder first
             try (Connection connection = DriverManager.getConnection(url)) {
-                String sql = "UPDATE songs SET count = ? WHERE list = ?;";
+                String sql = "UPDATE songsInAppData SET songCount = ? WHERE songPath = ?;";
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                preparedStatement.setString(2, str);
+                preparedStatement.setString(2, songPath);
                 preparedStatement.setInt(1, newCount);
                 preparedStatement.executeUpdate();
             } catch (Exception e) {
@@ -1237,5 +1277,51 @@ public class MainSceneController {
            fast.setImage(new Image(getClass().getResourceAsStream("/icons/darkFastward.png")));
        }
     } // end method
+
+    public void deleteSongsForDeletedPlaylist(String str) {
+        String sql = "CREATE TABLE IF NOT EXISTS deleted_songs (" +
+                "file_paths TEXT NOT NULL UNIQUE);";
+        String sql1 = "INSERT INTO deleted_songs (file_paths)" +
+                "VALUES (?);";
+        String sql2 = "SELECT file_paths FROM " + str + ";";
+
+        try(Connection connection = DriverManager.getConnection(url)) {
+            Statement statement = connection.createStatement();
+            Statement statement1 = connection.createStatement();
+
+            ResultSet resultSet = statement1.executeQuery(sql2); // loads songs from playlist
+
+            ArrayList<String> songsInPlaylist = new ArrayList<>();
+
+            while (resultSet.next()) {
+                songsInPlaylist.add(resultSet.getString("file_paths"));
+            }
+
+            if (!songsInPlaylist.isEmpty()) {
+                statement.execute(sql); // creating deleted song  table;
+
+                for (String key : songsInPlaylist) {
+
+                    if (songsInMusicFolder.containsKey(key)) {
+                        Integer value = songsInMusicFolder.get(key);
+
+                        if (value >= 2) {
+                            songsInMusicFolder.put(key, value--); // update new songCount value first
+                            updateSongsTable(key);
+                        } else {
+                            songsInMusicFolder.remove(key);
+                            deleteSongsTableSingleCountSong(key);
+                            PreparedStatement preparedStatement = connection.prepareStatement(sql1);
+                            preparedStatement.setString(1, key);
+                            preparedStatement.executeUpdate();
+
+                        } // end
+                    } // end
+                } // outer loop ends
+            } // main if ends
+        } catch(SQLException e){
+            throw new RuntimeException(e);
+        }
+    } // method ends
 
 } // class ends here

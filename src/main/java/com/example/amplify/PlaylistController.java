@@ -5,10 +5,9 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.EventType;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
@@ -17,26 +16,22 @@ import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyEvent;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.text.*;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
-import javafx.util.Callback;
 
 import java.awt.*;
 import java.io.File;
@@ -48,15 +43,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 public class PlaylistController {
     @FXML
-    JFXButton back, miniplaypause, play, add, create, info;
+    JFXButton back, miniplaypause, play, add, create, manage;
     @FXML
-    Label miniTitle, miniArtist;
+    Label miniTitle, miniArtist, maxLabel;
     @FXML
     ImageView miniBanner;
     @FXML
@@ -79,7 +72,7 @@ public class PlaylistController {
     public boolean helperForPlayPause;
     public boolean isPlaylistLoaded = false;
     public boolean isCellCustomized = false;
-    int invalidSongPath = 0;
+    int invalidSongPath = 0, maxText = 18;
     ArrayList<String> removedFilePaths;
     ObservableList<Song> objectsOfOpendPlaylist;
 
@@ -87,8 +80,6 @@ public class PlaylistController {
     Scene mainScene;
 
     ImageView backIcon, miniPlay, miniPause, infoIcon, insta, linkedin;
-    HBox socialmediaHolder;
-    
 
     public void initialize() {
         soundLoader = new SoundLoader();
@@ -120,7 +111,7 @@ public class PlaylistController {
         back.setGraphic(backIcon);
 
         infoIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/managePlaylist.png"))));
-        info.setGraphic(infoIcon);
+        manage.setGraphic(infoIcon);
 
         miniPlay = new ImageView();
         miniPause = new ImageView();
@@ -162,7 +153,25 @@ public class PlaylistController {
         });
         create.setOnAction(event -> createPlaylistButtonController());
         add.setOnAction(event -> addSongs());
-        info.setOnAction(event -> showInfo());
+        manage.setOnAction(event -> playlistManagement());
+        input.textProperty().addListener((obs, oldText, newText) -> {
+            if (newText.length() > maxText) {
+                input.setText(oldText);
+                maxLabel.setVisible(true);
+            } else {
+                maxLabel.setVisible(false);
+            }
+        });
+        input.focusedProperty().addListener((obs, oldFocus, newFocus) -> {
+            if (!input.isFocused() && !create.isFocused()) {
+                input.clear();
+            }
+        });
+        input.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) create.requestFocus();
+        });
+        maxLabel.setVisible(false);
+        input.setStyle("-fx-font-size: 15px;");
 
         fileChooser.setTitle("Select an audio file");
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Audio Files","*.mp3", "*.wav", "*.aac"));
@@ -174,45 +183,13 @@ public class PlaylistController {
         Artist = new SimpleStringProperty("Artist Name");
         miniArtist.textProperty().bind(Artist);
 
-        // tooltip section
-        Tooltip playPauseTip = new Tooltip("Press Ctrl + P");
-        miniplaypause.setTooltip(playPauseTip);
-
-        Tooltip playPlaylistTip = new Tooltip("Play playlist");
-        play.setTooltip(playPlaylistTip);
-
-        Tooltip addTip = new Tooltip("Add song");
-        add.setTooltip(addTip);
-
-        Tooltip playlist = new Tooltip("Press \"Shift + Delete\" to delete playlist");
-        playlists.setTooltip(playlist);
-
-        Tooltip listViewTip = new Tooltip("Press \"Ctrl + Delete\" to delete song");
-        listView.setTooltip(listViewTip);
-
-        // preparing social media links
-        insta = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/instagram.png"))));
-        insta.setStyle("-fx-cursor: hand;");
-        linkedin = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/linkedin.png"))));
-        linkedin.setStyle("-fx-cursor: hand;");
-
-        JFXRippler instagramLink = new JFXRippler(insta);
-        JFXRippler linkedinLink = new JFXRippler(linkedin);
-
-        instagramLink.setRipplerFill(Color.GRAY);
-        instagramLink.setOnMouseClicked(e -> openLinks("https://www.instagram.com/atif_sk_92"));
-
-        linkedinLink.setRipplerFill(Color.GRAY);
-        linkedinLink.setOnMouseClicked(e -> openLinks("https://www.linkedin.com/in/shaik-atif-05a965355"));
-
-        socialmediaHolder = new HBox(10, instagramLink, linkedinLink);
-
     } // initialize method ends here
 /************************************************************************************************************************/
 
     public void addSongs() {
         if (isPlaylistLoaded) {
-            File selectedFile = fileChooser.showOpenDialog(null);
+            add.setDisable(true);
+            File selectedFile = fileChooser.showOpenDialog(mainStage);
             if (selectedFile != null) {
                 String fileName = selectedFile.getName().toLowerCase(Locale.ROOT); // converting into string for if statement checking
                 if (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".asc")) {
@@ -228,11 +205,31 @@ public class PlaylistController {
 
                         boolean isFileExists = addSongsToTable(filePath);
                         if (isFileExists) { // this if block is for when the selected song is already in database
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            Alert alert = new Alert(Alert.AlertType.NONE);
                             alert.initOwner(mainStage);
-                            alert.setTitle("Error");
-                            alert.setHeaderText("This song is already in your playlist");
-                            alert.setContentText("Please choose a different song");
+                            alert.setTitle("Add Song Error");
+
+                            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+                            errorIcon.setFitHeight(54);
+                            errorIcon.setFitWidth(54);
+                            HBox hBox = new HBox(15);
+                            hBox.setPrefSize(420,70);
+                            hBox.setPadding(new Insets(20, 0,0,20));
+
+                            VBox vBox = new VBox(1);
+                            Label title = new Label("This song is already in your playlist!");
+                            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                            Label content = new Label("Please choose a different song.");
+                            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                            vBox.getChildren().addAll(title, content);
+
+                            hBox.getChildren().addAll(errorIcon, vBox);
+                            alert.getDialogPane().setContent(hBox);
+                            alert.setHeaderText(null);
+
+                            ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+                            alert.getButtonTypes().add(ok);
+
                             alert.showAndWait();
                         } else { // this else block add audio to all places
                             // this section checks if song is already in the Music folder
@@ -271,22 +268,43 @@ public class PlaylistController {
                     }
                 } // if ends
             } // if ends
+            add.setDisable(false);
         } else { // this else block gets executed when a playlist is not loaded
-            Alert alert = new Alert(Alert.AlertType.ERROR);
+            Alert alert = new Alert(Alert.AlertType.NONE);
             alert.initOwner(mainStage);
-            alert.setTitle("Error");
-            alert.setHeaderText("No playlist is currently loaded");
-            alert.setContentText("Please play a playlist to add songs");
+            alert.setTitle("Add Song Error");
+
+            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+            errorIcon.setFitHeight(54);
+            errorIcon.setFitWidth(54);
+            HBox hBox = new HBox(15);
+            hBox.setPrefSize(390,70);
+            hBox.setPadding(new Insets(20, 0,0,20));
+
+            VBox vBox = new VBox(1);
+            Label title = new Label("No playlist is currently loaded!");
+            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+            Label content = new Label("Please load a playlist to add songs.");
+            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+            vBox.getChildren().addAll(title, content);
+
+            hBox.getChildren().addAll(errorIcon, vBox);
+            alert.getDialogPane().setContent(hBox);
+            alert.setHeaderText(null);
+
+            ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+            alert.getButtonTypes().add(ok);
+
             alert.showAndWait();
         } // main if else ended here
     } // method ends here
 
-    public void addNewSongTrace(String str) {
+    public void addNewSongTrace(String songPath) {
         try (Connection connection = DriverManager.getConnection(url)){
-            String sql = "INSERT INTO songs (list, count)" +
+            String sql = "INSERT INTO songsInAppData (songPath, songCount)" +
                     "VALUES (?, ?);";
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, str);
+            preparedStatement.setString(1, songPath);
             preparedStatement.setInt(2, 1);
             preparedStatement.executeUpdate();
         } catch (Exception e) {
@@ -299,36 +317,72 @@ public class PlaylistController {
         String userInput = input.getText();
         if (!userInput.isEmpty()) { // checking for empty input
             userInput = userInput.toUpperCase(); // converting to uppercase
-            for (String item : playlists.getItems()) {
-                if (item.equals(userInput)) { // checking if playlist already exists
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.initOwner(mainStage);
-                    alert.setTitle("Error");
-                    alert.setHeaderText("A playlist with this name already exists");
-                    alert.setContentText("Please create a different playlist");
-                    alert.showAndWait();
-                    input.clear(); // clearing entered string
-                    return;
-                } // if end
-            } // loop ends here
-            boolean confirmation = getConfirmationForPlaylistCreation(userInput);
-            if (confirmation) {
-                addNewPlaylistTable(userInput);
-                playlists.getItems().add(userInput.toUpperCase()); // adding playlist to combo box
+
+            if (playlists.getItems().contains(userInput)) { // checking if playlist already exists
+                Alert alert = new Alert(Alert.AlertType.NONE);
+                alert.initOwner(mainStage);
+                alert.setTitle("Create Playlist");
+
+                ImageView questionIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+                questionIcon.setFitHeight(54);
+                questionIcon.setFitWidth(54);
+                HBox hBox = new HBox(15);
+                hBox.setPrefSize(430,70);
+                hBox.setPadding(new Insets(20, 0,0,20));
+
+                VBox vBox = new VBox(1);
+                Label title = new Label("This playlist name is already taken!");
+                title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                Label content = new Label("Please create a different playlist.");
+                content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                vBox.getChildren().addAll(title, content);
+
+                hBox.getChildren().addAll(questionIcon, vBox);
+                alert.getDialogPane().setContent(hBox);
+                alert.setHeaderText(null);
+
+                ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+                alert.getButtonTypes().setAll(ok);
+
+                alert.showAndWait();
+                input.clear(); // clearing entered string
+            } else {
+                boolean confirmation = getConfirmationForPlaylistCreation(userInput);
+                if (confirmation) {
+                    addNewPlaylistTable(userInput); // creating new table
+                    playlists.getItems().add(userInput.toUpperCase()); // adding playlist to combo box
+                }
+                input.clear(); // clearing entered string
             }
-            input.clear(); // clearing entered string
         } // main if ends here
     } // method ends
 
     // this method gets confirmation
     public boolean getConfirmationForPlaylistCreation(String playlistName) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        Alert alert = new Alert(Alert.AlertType.NONE);
         alert.initOwner(mainStage);
-        alert.setTitle("Confirmation");
+        alert.setTitle("Create Playlist");
+
+        ImageView questionIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/question.png"))));
+        questionIcon.setFitHeight(54);
+        questionIcon.setFitWidth(54);
+        HBox hBox = new HBox(15);
+        hBox.setPrefSize(430,70);
+        hBox.setPadding(new Insets(20, 0,0,20));
+
+        VBox vBox = new VBox(1);
+        Label title = new Label("Would you like to create this playlist?");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label(playlistName);
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+        vBox.getChildren().addAll(title, content);
+
+        hBox.getChildren().addAll(questionIcon, vBox);
+        alert.getDialogPane().setContent(hBox);
         alert.setHeaderText(null);
-        alert.setContentText("Proceed with creating the playlist \"" + playlistName + "\"");
-        ButtonType yesButton = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
-        ButtonType noButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        ButtonType yesButton = new ButtonType("Yes", ButtonBar.ButtonData.OK_DONE);
+        ButtonType noButton = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(yesButton, noButton);
         return alert.showAndWait().orElse(noButton) == yesButton;
     } // method ends
@@ -373,22 +427,35 @@ public class PlaylistController {
         }
     } // method ends here
 
-
-    public String convertStringForPlaylist(String str) {
-        str = str.toLowerCase();
-        str = str.replace(" ", "_");
-        return str;
-    } // method ends here
-
     // this method loads playlist into listview 
     public void playPlaylist() {
         selection = playlists.getValue(); // getting playlist name from combo box
         if (selection == null) { // checks if selection is not null (means no playlist is selected)
-            Alert alert = new Alert(Alert.AlertType.ERROR);
+            Alert alert = new Alert(Alert.AlertType.NONE);
             alert.initOwner(mainStage);
-            alert.setTitle("Error");
-            alert.setHeaderText("No playlist has been selected");
-            alert.setContentText("Please select a playlist to begin playback");
+            alert.setTitle("Load Error");
+
+            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+            errorIcon.setFitHeight(54);
+            errorIcon.setFitWidth(54);
+            HBox hBox = new HBox(15);
+            hBox.setPrefSize(390,70);
+            hBox.setPadding(new Insets(20, 0,0,20));
+
+            VBox vBox = new VBox(1);
+            Label title = new Label("No playlist has been selected!");
+            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+            Label content = new Label("Please select a playlist to begin playback.");
+            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+            vBox.getChildren().addAll(title, content);
+
+            hBox.getChildren().addAll(errorIcon, vBox);
+            alert.getDialogPane().setContent(hBox);
+            alert.setHeaderText(null);
+
+            ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+            alert.getButtonTypes().add(ok);
+
             alert.showAndWait();
         } else  { // this else block loads all playlist
             if (!selection.equals(loadedPlaylist)) { // this if ensures that only unloaded playlist can be loaded
@@ -411,49 +478,125 @@ public class PlaylistController {
                 if (selection.equals("LIKED SONGS")) { // this if loads liked songs playlist in listview
                     loadSongsForListView("liked_songs"); // loading playlist
                     loadedPlaylist = "LIKED SONGS";
+                    if (mainSceneController.opendPlaylist.size() == 1) {
+                        mainSceneController.isShuffled = false;
+                        mainSceneController.shuffle.setSelected(false);
+                    }
+                    showInvalidAudioFileMessage();
                     showEmptyPlaylistMessage();
                 } else { // this else loads other playlists in listview
                     loadedPlaylist = selection; // adding loaded playlist name (all caps)
                     selection = selection.replace(" ", "_");
                     selection = selection.toLowerCase();
                     loadSongsForListView(selection); // loading new playlist
+                    if (mainSceneController.opendPlaylist.size() == 1) {
+                        mainSceneController.isShuffled = false;
+                        mainSceneController.shuffle.setSelected(false);
+                    }
+                    showInvalidAudioFileMessage();
                     showEmptyPlaylistMessage();
                 } // else if ends here
 
-                if (invalidSongPath > 0) { // if for displaying removed songs
-                    Alert alert = new Alert(Alert.AlertType.WARNING);
-                    alert.setTitle("Warning");
-                    alert.initOwner(mainStage);
-                    if (invalidSongPath == 1){
-                        alert.setHeaderText(invalidSongPath + " song has been removed from the playlist");
-                    } else {
-                        alert.setHeaderText(invalidSongPath + " songs has been removed from playlist");
-                    }
-                    alert.setContentText("This may be because the song was moved or deleted");
-                    alert.showAndWait();
-                }// if ends
                 listView.getSelectionModel().select(0); // this line sets the initial song after playlist is loaded
+                // these following lines work for all playlist (it is must)
+                mainSceneController.playlistIndex = 0; // setting index to 0 for default
+                mainSceneController.fullyLoadSong(); // loading first song after playlist selection
             } else { // this else block displays message for currently loaded playlist
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Information");
+                Alert alert = new Alert(Alert.AlertType.NONE);
+                alert.setTitle("Load Error");
                 alert.initOwner(mainStage);
-                alert.setHeaderText("This playlist is already loaded in the current view");
-                alert.setContentText("Please select different playlist");
+
+                ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+                errorIcon.setFitWidth(54);
+                errorIcon.setFitHeight(54);
+                HBox hBox = new HBox(15);
+                hBox.setPrefSize(390,70);
+                hBox.setPadding(new Insets(20, 0,0,20));
+
+                VBox vBox = new VBox(1);
+                Label title = new Label("This playlist is already loaded!");
+                title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                Label content = new Label("Please select a different playlist.");
+                content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                vBox.getChildren().addAll(title, content);
+
+                hBox.getChildren().addAll(errorIcon, vBox);
+                alert.getDialogPane().setContent(hBox);
+                alert.setHeaderText(null);
+
+                ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+                alert.getButtonTypes().add(ok);
+
                 alert.showAndWait();
             } // nested if ends here
-            // these following lines work for all playlist (it is must)
-            mainSceneController.playlistIndex = 0; // setting index to 0 for default
-            mainSceneController.fullyLoadSong(); // loading first song after playlist selection
         } // else block ends here
+    } // method ends
+
+    public void showInvalidAudioFileMessage() {
+        if (invalidSongPath > 0) { // if for displaying removed songs
+            Alert alert = new Alert(Alert.AlertType.NONE);
+            alert.setTitle("Warning");
+            alert.initOwner(mainStage);
+
+            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+            errorIcon.setFitHeight(54);
+            errorIcon.setFitWidth(54);
+            HBox hBox = new HBox(15);
+            hBox.setPrefSize(390,70);
+            hBox.setPadding(new Insets(20, 0,0,20));
+
+            VBox vBox = new VBox(1);
+            Label title = new Label("Audio file is missing!");
+            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+            Label content = new Label();
+
+            if (invalidSongPath == 1){
+                content.setText(invalidSongPath + " song has been removed from the playlist.");
+            } else {
+                content.setText(invalidSongPath + " song has been removed from the playlist.");
+            }
+
+            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+            vBox.getChildren().addAll(title, content);
+
+            hBox.getChildren().addAll(errorIcon, vBox);
+            alert.getDialogPane().setContent(hBox);
+            alert.setHeaderText(null);
+
+            ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+            alert.getButtonTypes().add(ok);
+
+            alert.showAndWait();
+        }// if ends
     } // method ends
 
     public void showEmptyPlaylistMessage() {
         if (objectsOfOpendPlaylist.isEmpty()) { // checks for empty playlist
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
+            Alert alert = new Alert(Alert.AlertType.NONE);
+            alert.setTitle("Load Error");
             alert.initOwner(mainStage);
-            alert.setHeaderText("The current playlist is empty");
-            alert.setContentText("Please add songs to begin playback");
+
+            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+            errorIcon.setFitWidth(54);
+            errorIcon.setFitHeight(54);
+            HBox hBox = new HBox(15);
+            hBox.setPrefSize(390,70);
+            hBox.setPadding(new Insets(20, 0,0,20));
+
+            VBox vBox = new VBox(1);
+            Label title = new Label("This playlist is empty!");
+            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+            Label content = new Label("Please add songs to begin playback.");
+            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+            vBox.getChildren().addAll(title, content);
+
+            hBox.getChildren().addAll(errorIcon, vBox);
+            alert.getDialogPane().setContent(hBox);
+            alert.setHeaderText(null);
+
+            ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+            alert.getButtonTypes().add(ok);
+
             alert.showAndWait();
         }
     } // method ends
@@ -554,24 +697,239 @@ public class PlaylistController {
                     setGraphic(hBox);
 
                     ContextMenu menu = new ContextMenu();
-                    MenuItem view = new MenuItem("Shuffle the playlist");
-                    view.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/shuffle.png")))));
-                    view.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+                    MenuItem shuffle = new MenuItem("Shuffle the playlist");
+                    shuffle.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/shuffle.png")))));
+                    shuffle.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+                    shuffle.setOnAction(e -> shufflePlaylist());
 
                     MenuItem loop = new MenuItem("Loop the song");
                     loop.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/loop.png")))));
                     loop.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+                    loop.setOnAction(e -> loopTheSong());
 
                     MenuItem delete = new MenuItem("Delete the song");
                     delete.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/delete.png")))));
                     delete.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
-                    menu.getItems().addAll(view, loop, delete);
+                    delete.setOnAction( e -> removeSong());
+                    menu.getItems().addAll(shuffle, loop, delete);
                     setContextMenu(menu);
                 } // else ends
 
             } // method
         }); // cell factory ends here
     } // method ends
+
+    public void shufflePlaylist() {
+        if (!mainSceneController.isShuffled) {
+           mainSceneController.isShuffled = true;
+           mainSceneController.shuffle.setSelected(true);
+           mainSceneController.isLooped = false;
+           mainSceneController.loop.setSelected(false);
+
+           if(!mainSceneController.opendPlaylist.isEmpty() && mainSceneController.opendPlaylist.size() > 1) {
+               Alert alert = new Alert(Alert.AlertType.NONE);
+               alert.initOwner(mainStage);
+               alert.setTitle("Shuffle Mode");
+
+               ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/notification.png"))));
+               errorIcon.setFitHeight(54);
+               errorIcon.setFitWidth(54);
+               HBox hBox = new HBox(15);
+               hBox.setPrefSize(390,70);
+               hBox.setPadding(new Insets(20, 0,0,20));
+
+               VBox vBox = new VBox(1);
+               Label title = new Label("The playlist is now shuffled!");
+               title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+               Label content = new Label("To turn it off, just tap the shuffle button again.");
+               content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+
+               vBox.getChildren().addAll(title, content);
+
+               hBox.getChildren().addAll(errorIcon, vBox);
+               alert.getDialogPane().setContent(hBox);
+               alert.setHeaderText(null);
+
+               ButtonType ok = new ButtonType("Got it", ButtonBar.ButtonData.OK_DONE);
+               alert.getButtonTypes().add(ok);
+
+               alert.showAndWait();
+           }
+        } else {
+            mainSceneController.isShuffled = false;
+            mainSceneController.shuffle.setSelected(false);
+        }
+    } // method end
+
+    public void loopTheSong() {
+        if (!mainSceneController.isLooped) {
+            mainSceneController.isLooped = true;
+            mainSceneController.loop.setSelected(true);
+            mainSceneController.isShuffled = false;
+            mainSceneController.shuffle.setSelected(false);
+
+            Alert alert = new Alert(Alert.AlertType.NONE);
+            alert.initOwner(mainStage);
+            alert.setTitle("Loop Mode");
+
+            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/notification.png"))));
+            errorIcon.setFitHeight(54);
+            errorIcon.setFitWidth(54);
+            HBox hBox = new HBox(15);
+            hBox.setPrefSize(390,70);
+            hBox.setPadding(new Insets(20, 0,0,20));
+
+            VBox vBox = new VBox(1);
+            Label title = new Label("This song will loop now!");
+            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+            Label content = new Label("To turn it off, just tap the loop button again.");
+            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+
+            vBox.getChildren().addAll(title, content);
+
+            hBox.getChildren().addAll(errorIcon, vBox);
+            alert.getDialogPane().setContent(hBox);
+            alert.setHeaderText(null);
+
+            ButtonType ok = new ButtonType("Got it", ButtonBar.ButtonData.OK_DONE);
+            alert.getButtonTypes().add(ok);
+
+            alert.showAndWait();
+        } else {
+            mainSceneController.isLooped = false;
+            mainSceneController.loop.setSelected(false);
+        }
+    } // method ends
+
+    public void removeSong() {
+        boolean confirmation = confirmDeletion();
+        if (confirmation) {
+            Song song = listView.getSelectionModel().getSelectedItem();
+            String selectedPlaylist = playlists.getValue();
+            for (Map.Entry<String, Integer> entry : mainSceneController.songsInMusicFolder.entrySet()) {
+                String key = entry.getKey();
+                Integer value = entry.getValue();
+
+                if (key.equals(song.filepath)) {
+                    if (value >= 2) {
+                        value--;
+                        mainSceneController.songsInMusicFolder.put(key, value);
+                        mainSceneController.updateSongsTable(key);
+                        deleteOnlySong(selectedPlaylist, key);
+                    } else {
+                        mainSceneController.deleteSongsTableSingleCountSong(key);
+                        deleteSongAndSendItToDelete(selectedPlaylist, key);
+                    }
+                    break;
+                }
+            } // loop end
+
+            if (selectedPlaylist.equals("LIKED SONGS")) {
+                mainSceneController.likedList.remove(song.filepath);
+                mainSceneController.opendPlaylist.remove(song.filepath);
+                objectsOfOpendPlaylist.remove(song);
+            } else {
+                mainSceneController.opendPlaylist.remove(song.filepath);
+                objectsOfOpendPlaylist.remove(song);
+            }
+
+            if (objectsOfOpendPlaylist.isEmpty()) { // resetting everything to default when there is no song in listview
+                resetEverythingToDefault();
+            } // if end
+        } // main if
+    } // method ends
+
+    public void resetEverythingToDefault() {
+        mainSceneController.timer.stop();
+        if (mainSceneController.soundLoader.mediaPlayer != null) mainSceneController.soundLoader.mediaPlayer.dispose();
+        mainSceneController.slider.setMax(100);
+        mainSceneController.slider.setValue(0);
+        mainSceneController.Length.set("00:00");
+        mainSceneController.Live.set("00:00");
+        mainSceneController.Title.set("(Song Title)");
+        mainSceneController.Artist.set("Artist Name");
+
+        Image image = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/banner.png")));
+        mainSceneController.banner.setImage(image);
+        setBanner(image);
+        setTitle("Song Title");
+        setArtist("Artist Name");
+
+        // setting to default when playlist is empty
+        mainSceneController.helperForPlayPause = false;
+        helperForPlayPause = true;
+        isSongLoaded = false;
+        mainSceneController.isSongLoaded = false;
+        mainSceneController.playpause.setGraphic(mainSceneController.play);
+        miniplaypause.setGraphic(miniPlay);
+    } // method end
+
+    // this method deletes song from database and send it for deletion
+    public void deleteSongAndSendItToDelete(String playlist, String songPath) {
+        try (Connection connection = DriverManager.getConnection(url)){
+            playlist = playlist.toLowerCase();
+            playlist = playlist.replace(" ", "_");
+            String sql1 = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
+            String sql2 = "INSERT INTO deleted_songs (file_paths)" +
+                    "VALUES (?);";
+            PreparedStatement preparedStatement1 = connection.prepareStatement(sql1);
+            preparedStatement1.setString(1, songPath);
+            preparedStatement1.executeUpdate();
+
+            PreparedStatement preparedStatement2 = connection.prepareStatement(sql2);
+            preparedStatement2.setString(1, songPath);
+            preparedStatement2.executeUpdate();
+
+        } catch (SQLException sqlException) {
+            System.out.println("Error " + sqlException.getMessage());
+        }
+    } // method ends
+
+    // this method deletes only file path from table
+    public void deleteOnlySong(String playlist, String songPath) {
+        try (Connection connection = DriverManager.getConnection(url)){
+            playlist = playlist.toLowerCase();
+            playlist = playlist.replace(" ", "_");
+            String sql = "DELETE FROM " + playlist + " WHERE file_paths = (?);";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, songPath);
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException sqlException) {
+            System.out.println("Error " + sqlException.getMessage());
+        }
+    } // method ends
+
+    public boolean confirmDeletion() {
+        Song song = listView.getSelectionModel().getSelectedItem();
+        Alert alert = new Alert(Alert.AlertType.NONE);
+
+        ImageView BannerIcon = new ImageView(song.art);
+        BannerIcon.setFitHeight(54);
+        BannerIcon.setFitWidth(54);
+        HBox hBox = new HBox(15);
+        hBox.setPrefSize(430,70);
+        hBox.setPadding(new Insets(20, 0,0,20));
+
+        VBox vBox = new VBox(1);
+        Label title = new Label("Would you like to delete this song?");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label(song.title);
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+        vBox.getChildren().addAll(title, content);
+
+        hBox.getChildren().addAll(BannerIcon, vBox);
+        alert.getDialogPane().setContent(hBox);
+        alert.setHeaderText(null);
+
+        alert.setTitle("Delete song");
+        alert.initOwner(mainStage);
+        ButtonType delete = new ButtonType("Yes, delete", ButtonBar.ButtonData.YES);
+        ButtonType cancel = new ButtonType("No, keep", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(delete, cancel);
+        return alert.showAndWait().orElse(cancel) == delete;
+    } // end
 
     // this method loads all playlist names
     public void loadPlaylistNames() {
@@ -673,9 +1031,9 @@ public class PlaylistController {
         } // if ends
     } // method ends
 
-    public void showInfo() {
-        Dialog<Void> infoDialog = new Dialog<>();
-        infoDialog.setTitle("Manage Playlists");
+    public void playlistManagement() {
+        Dialog<Void> playlistManagementDialog = new Dialog<>();
+        playlistManagementDialog.setTitle("Manage Playlists");
 
         VBox allPlaylists = new VBox();
         allPlaylists.setPrefSize(360, 200);
@@ -683,42 +1041,208 @@ public class PlaylistController {
         scrollPane.setPrefSize(400,200);
 
         for (String playlist: playlists.getItems()) {
+            final String playlistName = playlist;
             HBox leftHBox = new HBox();
             leftHBox.setPrefSize(280, 40);
             leftHBox.setAlignment(Pos.CENTER_LEFT);
-            leftHBox.getChildren().add(new Label(playlist));
+
+            Label playlistLabel = new Label();
+            playlistLabel.setStyle("-fx-font-weight: bold;");
+            SimpleStringProperty label = new SimpleStringProperty();
+            playlistLabel.textProperty().bind(label);
+            label.set(playlist);
+
+            leftHBox.getChildren().add(playlistLabel);
 
             HBox rightHBox = new HBox();
             rightHBox.setPrefSize(80,40);
             rightHBox.setAlignment(Pos.CENTER_RIGHT);
+            HBox hBox = new HBox();
             if (!playlist.equals("LIKED SONGS")) {
                 JFXButton deletButton = new JFXButton();
                 deletButton.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/deletePlaylist.png")))));
+
+                deletButton.setOnAction(event -> {
+                    boolean toDo = getConfirmationFromUser(playlistName);
+                    if (toDo) {
+                        mainSceneController.deleteSongsForDeletedPlaylist(playlistName.toLowerCase().replace(" ", "_"));
+                        String sql = "DROP TABLE IF EXISTS " + playlistName.toLowerCase().replace(" ", "_") + ";";
+                        String sql2 = "DELETE FROM all_playlists WHERE playlists = (?);";
+                        String sql3 = "SELECT file_paths FROM " + playlistName.toLowerCase().replace(" ", "_");
+                        String sql4 = "INSERT INTO deleted_songs (file_paths)" +
+                                "VALUES (?);";
+
+                        try (Connection connection = DriverManager.getConnection(url)) {
+                            Statement statement = connection.createStatement();
+                            Statement statement1 = connection.createStatement();
+
+                            // count the song trace before deleting the playlist table
+                            ResultSet resultSet = statement1.executeQuery(sql3);
+                            while (resultSet.next()) {
+                                String path = resultSet.getString("file_paths");
+                                if (mainSceneController.songsInMusicFolder.containsKey(path)) {
+                                    Integer value = mainSceneController.songsInMusicFolder.get(path);
+                                    if (value >= 2) {
+                                        value--;
+                                        mainSceneController.songsInMusicFolder.put(path, value);
+                                        mainSceneController.updateSongsTable(path);
+                                    } else {
+                                        mainSceneController.songsInMusicFolder.remove(path);
+                                        mainSceneController.deleteSongsTableSingleCountSong(path);
+
+                                        PreparedStatement preparedStatement = connection.prepareStatement(sql4);
+                                        preparedStatement.setString(1, path);
+                                        preparedStatement.executeUpdate();
+                                    }
+                                } // if ended
+                            } // loop end
+
+                            PreparedStatement preparedStatement = connection.prepareStatement(sql2);
+                            preparedStatement.setString(1, playlistName.toLowerCase().replace(" ", "_"));
+
+                            preparedStatement.executeUpdate();
+                            statement.execute(sql);
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                        if (loadedPlaylist.equals(playlistName)) {
+                            objectsOfOpendPlaylist.clear();
+                            resetEverythingToDefault();
+                        }
+                        allPlaylists.getChildren().remove(hBox); // removing playlist option from delete panel
+                        playlists.getItems().remove(playlistName); // removing playlist from
+
+                    } // end
+                }); // delete button onAction ends
+
                 deletButton.getStyleClass().add("transparent-button");
 
                 JFXButton edit = new JFXButton();
                 edit.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/edit.png")))));
+                edit.setOnAction(event -> { // edit button onAction
+                    Dialog<Void> dialog = new Dialog<>();
+                    dialog.initOwner(mainStage);
+                    dialog.setTitle("Edit playlist name");
+                    HBox box = new HBox(20);
+                    box.setPrefSize(350,50);
+                    Label max = new Label("max");
+                    max.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: red;");
+                    max.setVisible(false);
+
+                    Button renameButton = new Button("Rename");
+                    renameButton.setPrefSize(80,35);
+
+                    TextField textField = new TextField();
+                    textField.setPromptText("Enter new name");
+                    textField.setPrefSize(240, 35);
+
+                    renameButton.setOnAction(e -> { // this will rename the table
+                        String newName = textField.getText();
+                        if (!newName.isEmpty()) {
+                            newName = newName.trim().toLowerCase().replace(" ", "_");
+                            String sql = "ALTER TABLE " + playlistName.toLowerCase().replace(" ", "_") + " RENAME TO " + newName + ";";
+                            String sql1 = "UPDATE all_playlists SET playlists = ? WHERE playlists = ?;";
+
+                            try (Connection connection = DriverManager.getConnection(url)) {
+                                Statement statement = connection.createStatement();
+
+                                PreparedStatement preparedStatement = connection.prepareStatement(sql1);
+                                preparedStatement.setString(1, newName);
+                                preparedStatement.setString(2, playlistName.toLowerCase().replace(" ", "_"));
+
+                                statement.execute(sql);
+                                preparedStatement.executeUpdate();
+                            } catch (SQLException ex) {
+                                throw new RuntimeException(ex);
+                            }
+                            int index = playlists.getItems().indexOf(playlistName);
+                            if (index != -1) {
+                                playlists.getItems().set(index, newName.toUpperCase().replace("_", " "));
+                            }
+                            label.set(newName.toUpperCase().replace("_", " "));
+                            dialog.close();
+                        } // if ends
+                    });
+                    StackPane base = new StackPane(textField, max);
+                    StackPane.setAlignment(max, Pos.CENTER_RIGHT); // putting max label on TextField
+                    StackPane.setMargin(max, new Insets(0, 6, 0, 0)); // adjusting margin
+
+                    box.getChildren().addAll(base, renameButton);
+
+                    textField.setOnKeyPressed( e -> { // this is to shift focus on rename button
+                        if (textField.isFocused() && e.getCode() == KeyCode.ENTER) {
+                            renameButton.requestFocus();
+                        } else if (textField.isFocused() && e.getCode() == KeyCode.RIGHT) {
+                            renameButton.requestFocus();
+                        }
+                    }); // end
+                    textField.textProperty().addListener((obs, oldText, newText) -> {
+                        if (newText.length() > maxText) {
+                            textField.setText(oldText);
+                            max.setVisible(true);
+                        } else {
+                            max.setVisible(false);
+                        }
+                    });
+                    textField.setStyle("-fx-font-size: 15px;");
+
+                    ButtonType close = ButtonType.CLOSE;
+                    dialog.getDialogPane().getButtonTypes().add(close);
+                    Button closeButton = (Button) dialog.getDialogPane().lookupButton(close);
+                    closeButton.setManaged(false);
+                    dialog.getDialogPane().setContent(box);
+                    dialog.show();
+
+                });
+
                 edit.getStyleClass().add("transparent-button");
                 rightHBox.getChildren().addAll(edit, deletButton);
-            }
-            HBox hBox = new HBox();
+            } // end
+
             hBox.getChildren().addAll(leftHBox, rightHBox);
             hBox.setPrefSize(300,40);
 
             allPlaylists.getChildren().add(hBox);
         } // loop ends
 
-        infoDialog.initOwner(mainStage);
-        infoDialog.getDialogPane().setContent(scrollPane);
-        ButtonType cancel = ButtonType.CANCEL;
-        infoDialog.getDialogPane().getButtonTypes().add(cancel);
-        Button button = (Button) infoDialog.getDialogPane().lookupButton(cancel);
-        button.setManaged(false);
+        playlistManagementDialog.initOwner(mainStage);
+        playlistManagementDialog.getDialogPane().setContent(scrollPane);
+        ButtonType close = ButtonType.CLOSE;
+        playlistManagementDialog.getDialogPane().getButtonTypes().add(close);
+        Button button = (Button) playlistManagementDialog.getDialogPane().lookupButton(close);
 
-        infoDialog.show();
+        playlistManagementDialog.show();
     } // method ends
 
-    // remote it
+    public boolean getConfirmationFromUser(String operand) {
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        alert.setTitle("Delete playlist");
+
+        ImageView questionIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/question.png"))));
+        questionIcon.setFitWidth(54);
+        questionIcon.setFitHeight(54);
+        HBox hBox = new HBox(15);
+        hBox.setPrefSize(430,70);
+        hBox.setPadding(new Insets(20, 0,0,20));
+
+        VBox vBox = new VBox(1);
+        Label title = new Label("Would you like to delete this playlist?");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label("Once the playlist is deleted, it cannot be undone.");
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+        vBox.getChildren().addAll(title, content);
+
+        hBox.getChildren().addAll(questionIcon, vBox);
+        alert.getDialogPane().setContent(hBox);
+        alert.setHeaderText(null);
+        
+        ButtonType yes = new ButtonType("Yes, delete", ButtonBar.ButtonData.YES);
+        ButtonType no = new ButtonType("No, keep", ButtonBar.ButtonData.NO);
+        alert.getButtonTypes().setAll(yes, no);
+        alert.initOwner(mainStage);
+        return alert.showAndWait().orElse(no) == yes;
+    } // method ends
+
     // this method opens links pressed by users
     public void openLinks(String url) {
         try {
@@ -745,25 +1269,6 @@ public class PlaylistController {
         mainSceneController.letItUpdateInlistviewListener = false;
         mainSceneController.songsShouldBeRemoved.clear();
     } // method ends
-
-    // this method sets theme for playlist
-    public void changeThemeForPlaylistScene(String theme, String miniAnchorTheme, String miniAnchorBorder, String comboboxTheme) {
-        playlistSceneFXML.setStyle(theme);
-        miniAnchor.setStyle(miniAnchorTheme + miniAnchorBorder);
-        if (comboboxTheme.equals("Default Theme")) { // changing combo box's theme according app's theme
-            playlists.lookupAll(".text").forEach(text -> text.setStyle("-fx-fill: #000000;"));
-            playlists.setStyle("-fx-control-inner-background: #b3d9ff;");
-            playlists.setFocusColor(Paint.valueOf("#4059A9")); // changing the color of underline of combobox
-            playlists.setUnFocusColor(Paint.valueOf("#4059A9"));
-            playlists.lookupAll(".arrow").forEach(arrow -> arrow.setStyle("-fx-background-color: #000000;"));
-        } else if (comboboxTheme.equals("Dark Theme")) {
-            playlists.lookupAll(".arrow").forEach(arrow -> arrow.setStyle("-fx-background-color: #ffffff;"));
-            playlists.lookupAll(".text").forEach(text -> text.setStyle("-fx-fill: #ffffff;"));
-            playlists.setFocusColor(javafx.scene.paint.Paint.valueOf("#008000"));
-            playlists.setUnFocusColor(Paint.valueOf("#008000"));
-            playlists.setStyle("-fx-control-inner-background: #00e6ac;");
-        }
-    } // end
 
     public void changeComboBoxLineColor(String theme) {
         if (theme.equals("Light Theme")) {
