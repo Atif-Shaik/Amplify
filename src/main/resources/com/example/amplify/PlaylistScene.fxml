@@ -46,12 +46,12 @@
          </font>
       </JFXButton>
       <TextField fx:id="input" layoutX="76.0" layoutY="30.0" prefHeight="32.0" prefWidth="223.0" promptText="Create playlist" />
-      <JFXButton fx:id="create" buttonType="RAISED" layoutX="308.0" layoutY="30.0" prefHeight="32.0" prefWidth="110.0" ripplerFill="#6b7dcc" text="Create">
+      <JFXButton fx:id="create" buttonType="RAISED" layoutX="312.0" layoutY="30.0" prefHeight="32.0" prefWidth="110.0" ripplerFill="#6b7dcc" text="Create">
          <font>
             <Font name="System Bold" size="14.0" />
          </font>
       </JFXButton>
-      <JFXButton fx:id="manage" buttonType="RAISED" ellipsisString="" layoutX="430.0" layoutY="27.0" prefHeight="32.0" prefWidth="32.0" />
+      <JFXButton fx:id="manage" buttonType="RAISED" ellipsisString="" layoutX="434.0" layoutY="27.0" prefHeight="32.0" prefWidth="32.0" />
       <Label fx:id="maxLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="255.0" layoutY="33.0" prefHeight="17.0" prefWidth="41.0" style="-fx-text-fill: red;" text="max">
          <font>
             <Font name="System Bold" size="16.0" />

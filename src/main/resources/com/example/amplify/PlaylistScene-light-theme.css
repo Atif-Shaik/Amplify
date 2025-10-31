@@ -1,3 +1,23 @@
+@font-face {
+    font-family: "Poppins Bold";
+    src: url("../../../fonts/Poppins-Bold.ttf");
+}
+
+@font-face {
+    font-family: "Poppins";
+    src: url("../../../fonts/Poppins-Regular.ttf");
+}
+
+#miniTitle {
+    -fx-font-family: "Poppins Bold";
+    -fx-font-size: 24px;
+}
+
+#miniArtist {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 12px;
+}
+
 #playlistSceneFXML {
     -fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));
 }
@@ -12,6 +32,7 @@
     -jfx-rippler-fill: #006;
 }
 .jfx-button {
+    -fx-text-fill: black;
     -fx-background-color: cyan;
 }
 .transparent-button {

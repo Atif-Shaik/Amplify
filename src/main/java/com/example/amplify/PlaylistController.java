@@ -32,8 +32,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
+import org.kordamp.ikonli.bootstrapicons.BootstrapIcons;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -79,7 +81,8 @@ public class PlaylistController {
     Stage mainStage;
     Scene mainScene;
 
-    ImageView backIcon, miniPlay, miniPause, infoIcon, insta, linkedin;
+    ImageView miniPlay, miniPause, insta, linkedin;
+    FontIcon backIcon, manageIcon;
 
     public void initialize() {
         soundLoader = new SoundLoader();
@@ -107,16 +110,19 @@ public class PlaylistController {
         });
 
         // getting icons
-        backIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/back.png"))));
+        backIcon = new FontIcon(FontAwesomeSolid.REPLY);
+        backIcon.setIconSize(32);
         back.setGraphic(backIcon);
 
-        infoIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/managePlaylist.png"))));
-        manage.setGraphic(infoIcon);
+        manageIcon = new FontIcon(FontAwesomeSolid.TH_LIST);
+        manageIcon.setIconSize(32);
+        manage.setGraphic(manageIcon);
 
         miniPlay = new ImageView();
         miniPause = new ImageView();
 
         miniplaypause.setGraphic(miniPlay); // this is important
+
         // styling section
         miniplaypause.getStyleClass().add("round-button");
 
@@ -267,7 +273,7 @@ public class PlaylistController {
                             if (selection.equals("LIKED SONGS")) { // this if adds song to liked list data abd sets liked icon to like button
                                 mainSceneController.likedList.add(filePath);
                                 mainSceneController.isLiked = true;
-                                mainSceneController.likeAndDislike.setGraphic(mainSceneController.like);
+                                mainSceneController.likeAndDislike.setGraphic(mainSceneController.likeIcon);
                             } // end
                         } // else ends
                     } catch (IOException e) {
@@ -705,17 +711,23 @@ public class PlaylistController {
 
                     ContextMenu menu = new ContextMenu();
                     MenuItem shuffle = new MenuItem("Shuffle the playlist");
-                    shuffle.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/shuffle.png")))));
+                    FontIcon shuffleIcon = new FontIcon(BootstrapIcons.SHUFFLE);
+                    shuffleIcon.setIconSize(22);
+                    shuffle.setGraphic(shuffleIcon);
                     shuffle.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
                     shuffle.setOnAction(e -> shufflePlaylist());
 
                     MenuItem loop = new MenuItem("Loop the song");
-                    loop.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/loop.png")))));
+                    FontIcon loopIcon = new FontIcon(BootstrapIcons.ARROW_REPEAT);
+                    loopIcon.setIconSize(22);
+                    loop.setGraphic(loopIcon);
                     loop.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
                     loop.setOnAction(e -> loopTheSong());
 
                     MenuItem delete = new MenuItem("Delete the song");
-                    delete.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/delete.png")))));
+                    FontIcon deleteIcon = new FontIcon(BootstrapIcons.TRASH);
+                    deleteIcon.setIconSize(22);
+                    delete.setGraphic(deleteIcon);
                     delete.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
                     delete.setOnAction( e -> removeSong());
                     menu.getItems().addAll(shuffle, loop, delete);
@@ -1069,8 +1081,9 @@ public class PlaylistController {
             HBox hBox = new HBox();
             if (!playlist.equals("LIKED SONGS")) {
                 JFXButton deletButton = new JFXButton();
-                deletButton.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/deletePlaylist.png")))));
-
+                FontIcon deleteIcon = new FontIcon(FontAwesomeSolid.TRASH_ALT);
+                deleteIcon.setIconSize(18);
+                deletButton.setGraphic(deleteIcon);
                 deletButton.setOnAction(event -> {
                     boolean toDo = getConfirmationFromUser(playlistName);
                     if (toDo) {
@@ -1127,7 +1140,9 @@ public class PlaylistController {
                 deletButton.getStyleClass().add("transparent-button");
 
                 JFXButton edit = new JFXButton();
-                edit.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/edit.png")))));
+                FontIcon editIcon = new FontIcon(FontAwesomeSolid.EDIT);
+                editIcon.setIconSize(18);
+                edit.setGraphic(editIcon);
                 edit.setOnAction(event -> { // edit button onAction
                     Dialog<Void> dialog = new Dialog<>();
                     dialog.initOwner(mainStage);
@@ -1262,19 +1277,6 @@ public class PlaylistController {
         alert.getButtonTypes().setAll(yes, no);
         alert.initOwner(mainStage);
         return alert.showAndWait().orElse(no) == yes;
-    } // method ends
-
-    // this method opens links pressed by users
-    public void openLinks(String url) {
-        try {
-            Desktop.getDesktop().browse(new URI(url));
-        } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.initOwner(mainStage);
-            alert.setHeaderText(null);
-            alert.setContentText("Unable to open browser!");
-            alert.showAndWait();
-        }
     } // method ends
 
     public void removeCorruptedSongAndShowError(int index) {

@@ -1,3 +1,23 @@
+@font-face {
+    font-family: "Poppins Bold";
+    src: url("../../../fonts/Poppins-Bold.ttf");
+}
+
+@font-face {
+    font-family: "Poppins";
+    src: url("../../../fonts/Poppins-Regular.ttf");
+}
+
+#song_title {
+    -fx-font-family: "Poppins Bold";
+    -fx-font-size: 36px;
+}
+
+#artist_name {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 18px;
+}
+
 #mainSceneFXML {
     -fx-background-color: linear-gradient(to bottom, rgb(173,216,230), rgb(0,0,139));
 }
@@ -49,4 +69,47 @@
     -jfx-toggle-line-color: #cce0ff;
     -jfx-untoggle-color: #fafafa;
     -jfx-untoggle-line-color: #e6ecff;
+}
+
+.titled-pane {
+    -fx-collapsible: true;
+    -fx-animated: true;
+    -fx-font-weight: bold;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+.titled-pane > .title {
+    -fx-font-size: 18px;
+    -fx-background-color: transparent;
+}
+.titled-pane:hover {
+    -fx-background-color: cyan;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+}
+.button-style-for-settings {
+    -fx-font-size: 18px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-weight: bold;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+.button-style-for-settings:hover {
+    -fx-background-color: cyan;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+}
+.copy {
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+    -fx-background-color: transparent;
+    -fx-border-color: black;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+.copy:hover {
+    -fx-background-color: blue;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
 }

@@ -33,6 +33,7 @@ import java.util.Objects;
 
 public class Main extends Application {
     static String url;
+    MainSceneController mainSceneController;
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -43,7 +44,7 @@ public class Main extends Application {
         root.requestFocus(); // requesting focus for key
 
         // loading the controller class
-        MainSceneController mainSceneController = loader.getController();
+        mainSceneController = loader.getController();
         // sending stage and scene reference to controller class
         mainSceneController.setStage(stage);
         mainSceneController.setScene(mainScene);
@@ -184,6 +185,14 @@ public class Main extends Application {
         } catch (SQLException e) {
             // if liked_songs table is already created, INSERT won't work and catch block will execute.
             // if this block should be empty to prevent crash
+        }
+    } // method ends
+
+    @Override
+    public void stop() { // this run when the app closes
+        if (mainSceneController.scheduler != null) { // this if is important to release scheduler resources
+            mainSceneController.sleepTask.cancel(false);
+            mainSceneController.scheduler.shutdownNow();
         }
     } // method ends
 

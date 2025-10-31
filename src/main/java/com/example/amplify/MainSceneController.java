@@ -12,20 +12,40 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.kordamp.ikonli.bootstrapicons.BootstrapIcons;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeBrands;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
+import javafx.scene.text.Font;
 
+
+import javax.print.DocFlavor;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -35,6 +55,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class MainSceneController {
     @FXML
@@ -54,8 +75,6 @@ public class MainSceneController {
 
     JFXButton volumeButton, sleepButton;
     JFXComboBox<String> minuteSelection;
-    RadioButton option1, option2;
-    Dialog<Void> showSettings;
     Settings appSettings;
 
     int lastIndex = 0;
@@ -66,6 +85,7 @@ public class MainSceneController {
     int liveSconds = 0, liveMinute = 0;
     int minute, seconds, totalDurationInSeconds, secondsInDuration;
     Duration duration;
+    long sleepTimer = 0, selectedTimer;
 
     SimpleStringProperty Title, Artist, Length, Live;
     AnimationTimer timer;
@@ -73,8 +93,9 @@ public class MainSceneController {
     Stage mainStage;
     Scene mainScene, playlistScene;
     PlaylistController playlistController;
-    ImageView play, back, fast, add, list, pause, speaker, no_speaker, volumeIcon, mute, like, dislike, setting, lyrics;
+    ImageView play, back, fast, pause;
     Image art;
+    FontIcon  addSongIcon, playlistIcon, no_speakerIcon, dislikeIcon, setting, muteIcon, likeIcon, volumeIcon, speakerIcon, lyricsIcon;
     LinkedList<String> opendPlaylist;
     LinkedList<String> likedList;
     AnchorPane popupContent;
@@ -103,9 +124,14 @@ public class MainSceneController {
     boolean isExists = true;
     boolean letItUpdateInlistviewListener = true;
     boolean clearAllRemovedSongs = false;
+    boolean setTimer = false;
+    boolean endTrackSelection = false;
     Song removedSongObject;
     String tellWhatToDoAddOrRemove;
     PauseTransition delay;
+
+    ScheduledExecutorService scheduler;// = Executors.newSingleThreadScheduledExecutor();
+    ScheduledFuture<?> sleepTask;
 
     ArrayList<String> erroredSong;
     ArrayList<String> invalidSongTrace;
@@ -154,16 +180,37 @@ public class MainSceneController {
 
         // load custom icons for buttons
         art = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/banner.png")));
-        lyrics = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/lyrics.png"))));
-        setting = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/settings.png"))));
-        add = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/add.png"))));
-        list = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/playlist.png"))));
-        speaker = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/speaker.png"))));
-        no_speaker = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/no_speaker.png"))));
-        volumeIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/volumeIcon.png"))));
-        mute = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/mute.png"))));
-        like = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/like.png"))));
-        dislike = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/dislike.png"))));
+       
+        // loading icons from Icon libraries
+        playlistIcon = new FontIcon(BootstrapIcons.MUSIC_NOTE_LIST);
+        playlistIcon.setIconSize(32);
+
+        addSongIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
+        addSongIcon.setIconSize(32);
+
+        likeIcon = new FontIcon(FontAwesomeSolid.THUMBS_UP);
+        likeIcon.setIconSize(24);
+
+        dislikeIcon = new FontIcon(FontAwesomeSolid.THUMBS_DOWN);
+        dislikeIcon.setIconSize(24);
+
+        setting = new FontIcon(BootstrapIcons.GEAR_FILL);
+        setting.setIconSize(24);
+
+        speakerIcon = new FontIcon(FontAwesomeSolid.VOLUME_UP);
+        speakerIcon.setIconSize(24);
+
+        volumeIcon = new FontIcon(FontAwesomeSolid.VOLUME_DOWN);
+        volumeIcon.setIconSize(24);
+
+        muteIcon = new FontIcon(FontAwesomeSolid.VOLUME_OFF);
+        muteIcon.setIconSize(24);
+
+        no_speakerIcon = new FontIcon(FontAwesomeSolid.VOLUME_MUTE);
+        no_speakerIcon.setIconSize(24);
+
+        lyricsIcon = new FontIcon(FontAwesomeSolid.MUSIC);
+        lyricsIcon.setIconSize(24);
 
         // setting volume functionality section
         volumeSlider.setPrefSize(150, 40);
@@ -171,8 +218,6 @@ public class MainSceneController {
         volumeSlider.setMax(1);
         volumeSlider.setValue(0.5);
 
-        volumeIcon.setFitHeight(24);
-        volumeIcon.setFitWidth(24);
         volumeButton.setPrefWidth(24);
         volumeButton.setPrefHeight(24);
         volumeButton.setGraphic(volumeIcon);
@@ -193,14 +238,14 @@ public class MainSceneController {
 
         // add custom icons to buttons
         playpause.setGraphic(play);
-        lyricsAndBanner.setGraphic(lyrics);
+        lyricsAndBanner.setGraphic(lyricsIcon);
         settings.setGraphic(setting);
-        addSong.setGraphic(add);
-        playlist.setGraphic(list);
+        addSong.setGraphic(addSongIcon);
+        playlist.setGraphic(playlistIcon);
         backward.setGraphic(back);
         forward.setGraphic(fast);
-        volume.setGraphic(speaker);
-        likeAndDislike.setGraphic(dislike);
+        volume.setGraphic(speakerIcon);
+        likeAndDislike.setGraphic(dislikeIcon);
 
         // add css styles to buttons
         volumeButton.getStyleClass().add("transparent-button");
@@ -326,6 +371,31 @@ public class MainSceneController {
                 if (l - lastUpdate >= 1_000_000_000) {
                     countLiveSeconds++;
                     liveSconds++;
+                    if (endTrackSelection) { // if for sleep Timer
+                        sleepTimer++;
+                        if (sleepTimer == selectedTimer) {
+                            soundLoader.mediaPlayer.stop();
+                            timer.stop();
+                            playpause.setGraphic(play);
+                            helperForPlayPause = false; // should always be false here
+                            if (playlistController != null) { // this if prevents from null pointer exception when the playlist controller was not initialized
+                                playlistController.helperForPlayPause = true; // should always be true here
+                                playlistController.miniPlayPauseController(); // calling the mini play pause controller when the song has finished
+                            }
+                            isPaused = true;
+                            resetLiveCountSeconds();
+                            sleepTimer = 0;
+                            setTimer = false;
+                            minuteSelection.getSelectionModel().clearSelection();
+                            sleepButton.setText("Set Timer");
+                            endTrackSelection = false;
+                            isLooped = false;
+                            loop.setSelected(false);
+                            isShuffled = false;
+                            shuffle.setSelected(false);
+                            showEndSleepTimer();
+                        }
+                    } // end
                     if (liveSconds == 60) { // this if converts seconds to minute for displaying
                         liveMinute++;
                         liveSconds = 0;
@@ -389,11 +459,11 @@ public class MainSceneController {
         for (String path: likedList) {
             if (path.equals(filePath)) {
                 isLiked = true;
-                likeAndDislike.setGraphic(like);
+                likeAndDislike.setGraphic(likeIcon);
                 break;
             } else {
                 isLiked = false;
-                likeAndDislike.setGraphic(dislike);
+                likeAndDislike.setGraphic(dislikeIcon);
             }
         } // loop ends
     } // method ends
@@ -533,7 +603,7 @@ public class MainSceneController {
                 preparedStatement.executeUpdate(); // adding liked song to database
 
                 isLiked = true;
-                likeAndDislike.setGraphic(like);
+                likeAndDislike.setGraphic(likeIcon);
                 likedList.add(filePath);
 
                 PreparedStatement preparedStatement1 = connection.prepareStatement(sql2);
@@ -577,7 +647,7 @@ public class MainSceneController {
                 preparedStatement.executeUpdate(); // deleting song from liked list database
 
                 isLiked = false;
-                likeAndDislike.setGraphic(dislike);
+                likeAndDislike.setGraphic(dislikeIcon);
 
                 if (songsInMusicFolder.containsKey(filePath)) {
                     int count = songsInMusicFolder.get(filePath);
@@ -625,14 +695,14 @@ public class MainSceneController {
     public void volumeButtonController() {
         if (!isVolumeButtonPressed) {
             isVolumeButtonPressed = true;
-            volumeButton.setGraphic(mute);
-            volume.setGraphic(no_speaker);
+            volumeButton.setGraphic(muteIcon);
+            volume.setGraphic(no_speakerIcon);
             volumeSlider.setValue(0);
         } // outer if
         else if (isVolumeButtonPressed) {
             isVolumeButtonPressed = false;
             volumeButton.setGraphic(volumeIcon);
-            volume.setGraphic(speaker);
+            volume.setGraphic(speakerIcon);
             volumeSlider.setValue(0.5);
         } // if ends
     } // method ends here
@@ -641,11 +711,11 @@ public class MainSceneController {
     public void setMuteViaVolumeSlider() {
         double value = volumeSlider.getValue();
         if (value == 0) {
-           volumeButton.setGraphic(mute);
-           volume.setGraphic(no_speaker);
+           volumeButton.setGraphic(muteIcon);
+           volume.setGraphic(no_speakerIcon);
         } else if (value > 0) {
             volumeButton.setGraphic(volumeIcon);
-            volume.setGraphic(speaker);
+            volume.setGraphic(speakerIcon);
         } // if ends
         delay.play(); // this will close popup after 3 seconds
     } // method ends
@@ -706,6 +776,9 @@ public class MainSceneController {
                 liveMinute++;
             }
             Live.set(String.format("%02d:%02d", liveMinute, liveSconds));
+            if (endTrackSelection) { // this will help for en track sleep timmer
+                sleepTimer = countLiveSeconds;
+            }
         } // if ends
     } // method ends
 
@@ -1149,24 +1222,48 @@ public class MainSceneController {
 
     // method for settings
     public void setSettings() { // method starts
-        if (showSettings == null) {
-            showSettings = new Dialog<>();
-
+            Dialog<Void> showSettings = new Dialog<>();
             showSettings.initOwner(mainStage);
             showSettings.setTitle("Settings");
 
             VBox content = new VBox();
             ScrollPane scrollPane = new ScrollPane(content);
-            scrollPane.setPrefSize(290, 200);
+            scrollPane.setPrefWidth(400);
+            scrollPane.setPrefHeight(239);
 
-            Label settingLabel = new Label("App Theme");
-            Label timerLabel = new Label("Sleep Timer");
+            JFXButton help = new JFXButton("Help center");
+            JFXButton policy = new JFXButton("Terms and Privacy policy");
+            JFXButton invite = new JFXButton("Share");
+            help.setPrefWidth(366);
+            help.setAlignment(Pos.CENTER_LEFT);
+            help.getStyleClass().add("button-style-for-settings");
+            help.setOnAction(event -> openHelpWindow());
+            FontIcon helpIcon = new FontIcon(BootstrapIcons.QUESTION_SQUARE);
+            helpIcon.setIconSize(30);
+            help.setGraphic(helpIcon);
 
-            settingLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-            timerLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+            policy.setPrefWidth(366);
+            policy.setAlignment(Pos.CENTER_LEFT);
+            policy.getStyleClass().add("button-style-for-settings");
+            FontIcon policyIcon = new FontIcon(BootstrapIcons.INFO_SQUARE);
+            policyIcon.setIconSize(30);
+            policy.setGraphic(policyIcon);
+            policy.setOnAction(e -> openLinks("https://atif-shaik.github.io/AmplifMax-privacy-policy/"));
 
-            option1 = new RadioButton("Light Theme");
-            option2 = new RadioButton("Dark Theme");
+            invite.setPrefWidth(366);
+            invite.setAlignment(Pos.CENTER_LEFT);
+            invite.getStyleClass().add("button-style-for-settings");
+            FontIcon inviteIcon = new FontIcon(FontAwesomeRegular.SHARE_SQUARE);
+            inviteIcon.setIconSize(30);
+            invite.setGraphic(inviteIcon);
+            invite.setOnAction(e -> shareDialog());
+
+            RadioButton option1 = new RadioButton("Light Theme");
+            option1.setStyle("-fx-font-size: 14px;");
+            option1.setPrefWidth(355);
+            RadioButton option2 = new RadioButton("Dark Theme");
+            option2.setPrefWidth(355);
+            option2.setStyle("-fx-font-size: 14px;");
 
             ToggleGroup group = new ToggleGroup();
             option1.setToggleGroup(group);
@@ -1227,28 +1324,272 @@ public class MainSceneController {
                 } // end
             });
 
-            VBox.setMargin(option1, new Insets(10, 0, 5, 0)); // setting margine to make UI clean
-            VBox.setMargin(timerLabel, new Insets(10, 0, 0, 0)); // setting margin to tiler label
+            VBox.setMargin(option1, new Insets(0, 0, 5, 0)); // setting margine to make UI clean
+            VBox.setMargin(help, new Insets(5, 0, 0, 0));
+            if (minuteSelection == null) {
+                minuteSelection = new JFXComboBox<>(); // creating sleep timer
+                minuteSelection.getItems().addAll("5 minutes", "10 minutes", "15 minutes", "30 minutes", "45 minutes", "1 hour", "End of track");
+                minuteSelection.setPromptText("Set timer");
+                minuteSelection.setPrefWidth(200);
+                minuteSelection.setStyle("-fx-font-size: 16px;");
+            } //
 
-            minuteSelection = new JFXComboBox<>(); // creating sleep timer
-            minuteSelection.getItems().addAll("5 minutes", "10 minutes", "15 minutes", "30 minutes", "45 minutes", "1 hour", "End of track");
-            minuteSelection.setPromptText("Set timer");
-
-            sleepButton = new JFXButton();
-            sleepButton.setPrefWidth(20);
-            sleepButton.setPrefHeight(24);
-            sleepButton.setGraphic(new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/clockOff.png")))));
-            sleepButton.getStyleClass().add("transparent-button");
-
-            HBox sleeperBox = new HBox(10, minuteSelection, sleepButton); // creating HBox
-
-            content.getChildren().addAll(settingLabel, option1, option2, timerLabel, sleeperBox);
-
-            showSettings.getDialogPane().setContent(scrollPane);
-            showSettings.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+            if (sleepButton == null) {
+                sleepButton = new JFXButton("Set Timer");
+                sleepButton.setPrefWidth(110);
+                sleepButton.setStyle("-fx-background-color: transparent; -fx-border-color:black; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-font-size: 16px;");
+                sleepButton.setOnAction(event -> {
+                if (!setTimer && isSongLoaded) {
+                        String value = minuteSelection.getValue();
+                    if (value != null && !value.isEmpty() && isSongLoaded) {
+                            setTimer = true;
+                            sleepButton.setText("Stop Timer");
+                       switch (value) {
+                        case "5 minutes":
+                            scheduler = Executors.newSingleThreadScheduledExecutor();
+                            startSleepTimer(5);
+                            break;
+                        case "10 minutes":
+                            scheduler = Executors.newSingleThreadScheduledExecutor();
+                            startSleepTimer(10);
+                            break;
+                        case "15 minutes":
+                            scheduler = Executors.newSingleThreadScheduledExecutor();
+                            startSleepTimer(15);
+                            break;
+                        case "30 minutes":
+                            scheduler = Executors.newSingleThreadScheduledExecutor();
+                            startSleepTimer(30);
+                            break;
+                        case "45 minutes":
+                            scheduler = Executors.newSingleThreadScheduledExecutor();
+                            startSleepTimer(45);
+                            break;
+                        case "1 hour":
+                            scheduler = Executors.newSingleThreadScheduledExecutor();
+                            startSleepTimer(60);
+                            break;
+                        case "End of track":
+                            endTrackSelection = true;
+                            sleepTimer = countLiveSeconds;
+                            selectedTimer = totalDurationInSeconds;
+                            break;
+                        } // switch end
+                    }
+                } else {
+                    if (scheduler != null) {
+                        sleepTask.cancel(false);
+                        scheduler.shutdownNow();
+                    }
+                    setTimer = false;
+                    minuteSelection.getSelectionModel().clearSelection();
+                    sleepButton.setText("Set Timer");
+                }
+            });
         } // if ends
 
+        HBox sleeperBox = new HBox(10, minuteSelection, sleepButton); // creating HBox
+        VBox.setMargin(sleeperBox, new Insets(2,0,0,12));
+
+        TitledPane titledPane = new TitledPane("App Theme", new VBox(option1, option2));
+        titledPane.setExpanded(false);
+        titledPane.setPrefWidth(366);
+
+        TitledPane titledPane1 = new TitledPane("Sleep Timer", new VBox(sleeperBox));
+        titledPane1.setExpanded(false);
+        titledPane1.setPrefWidth(366);
+
+        Accordion accordion = new Accordion(titledPane, titledPane1);
+        VBox vBox = new VBox(accordion);
+        content.getChildren().addAll(vBox, help, policy, invite);
+        showSettings.getDialogPane().setContent(scrollPane); // scrollPane
+        showSettings.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
         showSettings.show();
+    } // method ends
+
+    public void openHelpWindow() {
+        Dialog<Void> helpWindow = new Dialog<>();
+        helpWindow.initOwner(mainStage);
+        helpWindow.setTitle("Help Center");
+        ScrollPane scrollPane = new ScrollPane();
+        VBox content = new VBox();
+        content.setPrefSize(455, 490);
+
+        ImageView helpIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/help.png"))));
+
+        Label helpTitle = new Label("How can we help you?");
+        helpTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 36px; -fx-text-fill: blue;");
+
+        Label heading1 = new Label("\uD83C\uDFB5 AmplifyMax – Help Guide");
+        heading1.setStyle("-fx-font-weight: bold; -fx-font-size: 22px; -fx-text-fill: blue;");
+
+        Label sub1 = new Label("\uD83D\uDCCC Overview");
+        sub1.setStyle("-fx-font-weight: bold; -fx-font-size: 22px; -fx-text-fill: blue;");
+
+        Text t1 = new Text("AmplifyMax is an offline music player designed for simplicity and performance. It allows you to manage your music library, create playlists, and enjoy features like shuffle, loop, shortcuts, and themes.");
+        t1.setWrappingWidth(430);
+        t1.setStyle("-fx-font-size: 18px;");
+
+        Label sub2 = new Label("▶ Getting Started");
+        sub2.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: blue;");
+
+        Text s1_1 = new Text("• Play Music: ");
+        s1_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st1_1 = new Text("Select a song from your library or playlist\n   and press the ▶ button (or Ctrl + p).\n");
+        st1_1.setStyle("-fx-font-size: 18px;");
+
+        Text s1_2 = new Text("• Pause/Resume: ");
+        s1_2.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st1_2 = new Text("Click the ⏸ button (or Ctrl + p).\n");
+        st1_2.setStyle("-fx-font-size: 18px;");
+
+        Text s1_3 = new Text("• Volume: ");
+        s1_3.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st1_3 = new Text("Adjust using the volume slider.");
+        st1_3.setStyle("-fx-font-size: 18px;");
+
+        TextFlow t2 = new TextFlow(s1_1, st1_1, s1_2, st1_2, s1_3, st1_3);
+
+        Label sub3 = new Label("\uD83C\uDFB6 Features");
+        sub3.setStyle("-fx-font-weight: bold; -fx-font-size: 22px; -fx-text-fill: blue;");
+
+        Label sub4 = new Label("\uD83D\uDD04 Playback Controls");
+        sub4.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: blue;");
+
+        String s2 = "• Loop: Repeats the current song." +
+                "\n" +
+                "• Shuffle: Plays songs randomly.";
+
+        Text s2_1 = new Text("• Loop: ");
+        s2_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st2_1 = new Text("Repeats the current song.\n");
+        st2_1.setStyle("-fx-font-size: 18px;");
+
+        Text s2_2 = new Text("• Shuffle: ");
+        s2_2.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st2_2 = new Text("Plays songs randomly.");
+        st2_2.setStyle("-fx-font-size: 18px;");
+
+        TextFlow t3 = new TextFlow(s2_1, st2_1, s2_2, st2_2);
+
+        Label sub5 = new Label("\uD83D\uDCC2 Playlists");
+        sub5.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: blue;");
+
+        Text s3_1 = new Text("• Create Playlist: ");
+        s3_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st3_1 = new Text("Go to Playlist > Create New Playlist.\n");
+        st3_1.setStyle("-fx-font-size: 18px;");
+
+        Text s3_2 = new Text("• Add Songs: ");
+        s3_2.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st3_2 = new Text("Click on add button and select an audio\n   file.\n");
+        st3_2.setStyle("-fx-font-size: 18px;");
+
+        Text s3_3 = new Text("• Delete Songs: ");
+        s3_3.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st3_3 = new Text("Right-click a song and select Delete.\n");
+        st3_3.setStyle("-fx-font-size: 18px;");
+
+        Text s3_4 = new Text("• Delete Playlist: ");
+        s3_4.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st3_4 = new Text("Go to Playlist Management > look for\n   playlist > press Delete button.\n");
+        st3_4.setStyle("-fx-font-size: 18px;");
+
+        Text s3_5 = new Text("• Rename Playlist: ");
+        s3_5.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st3_5 = new Text("Go to Playlist Management > look\n   for playlist > press Remane button.");
+        st3_5.setStyle("-fx-font-size: 18px;");
+
+        TextFlow t4 = new TextFlow(s3_1, st3_1, s3_2, st3_2, s3_3, st3_3, s3_4, st3_4, s3_5, st3_5);
+
+        Label sub6 = new Label("\uD83C\uDFA8 Appearance");
+        sub6.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: blue;");
+
+        Text s4_1 = new Text("• Dark/Light Theme: ");
+        s4_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st4_1 = new Text("Toggle from Settings > Theme.");
+        st4_1.setStyle("-fx-font-size: 18px;");
+
+        TextFlow t5 = new TextFlow(s4_1, st4_1);
+
+        Label sub7 = new Label("❓ FAQ / Troubleshooting");
+        sub7.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: blue;");
+
+        String s4 = "Q: Why won’t my song play?\n" +
+                "A: Make sure it’s in a supported format (MP3, WAV, etc.).";
+
+        Text s5_1 = new Text("Q: Why won’t my song play?\n");
+        s5_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text s5_2 = new Text("A: ");
+        s5_2.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        Text st5_1 = new Text("Make sure it’s in a supported format (MP3, WAV,\n     ASC).");
+        st5_1.setStyle("-fx-font-size: 18px;");
+
+        TextFlow t6 = new TextFlow(s5_1, s5_2, st5_1);
+
+        Label sub8 = new Label("Contact us");
+        sub8.setStyle("-fx-font-weight: bold; -fx-font-size: 24px; -fx-text-fill: blue;");
+
+        Text s6_1 = new Text("Have a question or facing an issue? We're here to \nhelp! Contact us anytime for support or feedback.");
+        s6_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        Hyperlink hyperlink = new Hyperlink("Email: assist.atifstudios@gmail.com");
+        hyperlink.setOnAction(e -> openLinks("mailto:assist.atifstudios@gmail.com"));
+        hyperlink.setStyle("-fx-font-size: 18px;");
+
+        JFXButton insta = new JFXButton();
+        insta.setPrefSize(30, 30);
+        insta.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        FontIcon instaIcon = new FontIcon(FontAwesomeBrands.INSTAGRAM);
+        instaIcon.setIconSize(30);
+        insta.setGraphic(instaIcon);
+        insta.setOnAction(e -> openLinks("https://www.instagram.com/atif_sk_92"));
+
+        JFXButton linkedIn = new JFXButton();
+        linkedIn.setPrefSize(30, 30);
+        linkedIn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        FontIcon linkedInIcon = new FontIcon(FontAwesomeBrands.LINKEDIN_IN);
+        linkedInIcon.setIconSize(30);
+        linkedIn.setGraphic(linkedInIcon);
+        linkedIn.setOnAction(e -> openLinks("https://www.linkedin.com/in/shaik-atif-05a965355"));
+
+        JFXButton gitHub = new JFXButton();
+        gitHub.setPrefSize(30, 30);
+        gitHub.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        FontIcon gitHubIcon = new FontIcon(FontAwesomeBrands.GITHUB);
+        gitHubIcon.setIconSize(30);
+        gitHub.setGraphic(gitHubIcon);
+        gitHub.setOnAction(e -> openLinks("https://github.com/Atif-Shaik"));
+
+        HBox socials = new HBox(20);
+        socials.getChildren().addAll(insta, linkedIn, gitHub);
+
+        VBox.setMargin(helpIcon, new Insets(10, 0, 0, 162));
+        VBox.setMargin(sub8, new Insets(10, 0 , 0, 0));
+        VBox.setMargin(helpTitle, new Insets(20, 0, 10, 40));
+        VBox.setMargin(heading1, new Insets(15, 0, 0, 0));
+        VBox.setMargin(hyperlink, new Insets(0, 0, 0, -5));
+
+        content.getChildren().addAll(helpIcon, helpTitle, heading1, sub1, t1, sub2, t2, sub3, sub4, t3, sub5, t4, sub6, t5, sub7, t6, sub8, s6_1, hyperlink, socials);
+
+        scrollPane.setContent(content);
+        helpWindow.getDialogPane().setContent(scrollPane);
+        helpWindow.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        helpWindow.showAndWait();
+    } // end method
+
+    // this method opens links pressed by users
+    public void openLinks(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.initOwner(mainStage);
+            alert.setHeaderText(null);
+            alert.setContentText("Unable to open browser!");
+            alert.showAndWait();
+        }
     } // method ends
 
     // getter for Setting object
@@ -1322,6 +1663,107 @@ public class MainSceneController {
         } catch(SQLException e){
             throw new RuntimeException(e);
         }
+    } // method ends
+
+    private void startSleepTimer(int minutes) {
+        if (sleepTask != null && !sleepTask.isDone()) {
+            // Cancel any existing task first
+            sleepTask.cancel(false);
+        }
+
+        // schedule new task
+        sleepTask = scheduler.schedule(() -> { // this block will execute after the selected sleep timer finished
+            Platform.runLater(() -> {
+                soundLoader.mediaPlayer.stop();
+                timer.stop();
+                playpause.setGraphic(play);
+                helperForPlayPause = false; // should always be false here
+                if (playlistController != null) { // this if prevents from null pointer exception when the playlist controller was not initialized
+                    playlistController.helperForPlayPause = true; // should always be true here
+                    playlistController.miniPlayPauseController(); // calling the mini play pause controller when the song has finished
+                }
+                isPaused = true;
+                resetLiveCountSeconds();
+                minuteSelection.getSelectionModel().clearSelection();
+                sleepButton.setText("Set Timer");
+                sleepTask.cancel(false);
+                scheduler.shutdownNow();
+                showEndSleepTimer();
+            });
+        }, minutes, TimeUnit.MINUTES);
+    } // method ends
+
+    public void showEndSleepTimer() {
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        alert.initOwner(mainStage);
+        alert.setTitle("Shuffle Error");
+        ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/notification.png"))));
+        errorIcon.setFitWidth(54);
+        errorIcon.setFitHeight(54);
+        HBox hBox = new HBox(15);
+        hBox.setPrefSize(390,70);
+        hBox.setPadding(new Insets(20, 0,0,20));
+
+        VBox vBox = new VBox(1);
+        Label title = new Label("Time's up!");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label("The sleep timer has turned off your music.");
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+        vBox.getChildren().addAll(title, content);
+
+        hBox.getChildren().addAll(errorIcon, vBox);
+        alert.getDialogPane().setContent(hBox);
+        alert.setHeaderText(null);
+
+        ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+        alert.getButtonTypes().add(ok);
+
+        alert.show();
+    } // method ends
+
+    public void shareDialog() {
+        Dialog<Void> shareWindow = new Dialog<>();
+        shareWindow.initOwner(mainStage);
+        shareWindow.setTitle("Share App");
+        VBox contentBox = new VBox();
+        contentBox.setPrefSize(400, 350);
+        contentBox.setAlignment(Pos.TOP_CENTER);
+
+        ImageView shareIcon = new ImageView(new Image(String.valueOf(Objects.requireNonNull(getClass().getResource("/icons/shareImage.png")))));
+        shareIcon.setFitWidth(150);
+        shareIcon.setFitHeight(150);
+
+        Label label1 = new Label("Let your friends discover your");
+        label1.setStyle("-fx-font-size: 26px; -fx-font-weight: bold;");
+        Label label2 = new Label("favorite music app!");
+        label2.setStyle("-fx-font-size: 26px; -fx-font-weight: bold;");
+        Label label3 = new Label("Tap the \"Copy Link\" and spread the rhythm!");
+        label3.setStyle("-fx-font-size: 16px;");
+        JFXButton copyButton = new JFXButton("Copy Link");
+        copyButton.setPrefSize(120, 60);
+        copyButton.getStyleClass().add("copy");
+        Label link = new Label("https://apps.microsoft.com/detail/9N03D6ZR5NBJ?hl=en-us&gl=IN&ocid=pdpshare");
+        copyButton.setOnAction(e -> {
+            Clipboard clipboard = Clipboard.getSystemClipboard();
+            ClipboardContent content = new ClipboardContent();
+            content.putString("I've been using AmplifyMAX, a clean, fast offline music player for desktop! Give it a try:\n" + link.getText());
+            content.putUrl(link.getText());
+            clipboard.setContent(content);
+            copyButton.setText("Copied");
+            copyButton.setDisable(true);
+        });
+
+        VBox.setMargin(label1, new Insets(15, 0, 0, 0));
+        VBox.setMargin(copyButton, new Insets(15, 0, 0, 0));
+        contentBox.getChildren().addAll(shareIcon, label1, label2, label3, copyButton);
+
+        ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+        shareWindow.getDialogPane().getButtonTypes().add(close);
+        shareWindow.getDialogPane().setContent(contentBox);
+
+        Button closeButton = (Button) shareWindow.getDialogPane().lookupButton(close);
+        closeButton.setManaged(false);
+        shareWindow.show();
     } // method ends
 
 } // class ends here
