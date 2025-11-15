@@ -42,6 +42,8 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import javafx.scene.text.Font;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignR;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignU;
 
 
 import javax.print.DocFlavor;
@@ -52,6 +54,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
@@ -91,8 +94,9 @@ public class MainSceneController {
     AnimationTimer timer;
 
     Stage mainStage;
-    Scene mainScene, playlistScene;
+    Scene mainScene, playlistScene, lyricsScene;
     PlaylistController playlistController;
+    LyricsController lyricsController;
     ImageView play, back, fast, pause;
     Image art;
     FontIcon  addSongIcon, playlistIcon, no_speakerIcon, dislikeIcon, setting, muteIcon, likeIcon, volumeIcon, speakerIcon, lyricsIcon;
@@ -126,6 +130,7 @@ public class MainSceneController {
     boolean clearAllRemovedSongs = false;
     boolean setTimer = false;
     boolean endTrackSelection = false;
+    boolean isLyricsSceneCreated = false;
     Song removedSongObject;
     String tellWhatToDoAddOrRemove;
     PauseTransition delay;
@@ -251,6 +256,7 @@ public class MainSceneController {
         volumeButton.getStyleClass().add("transparent-button");
 
         // add action listeners to buttons
+        lyricsAndBanner.setOnAction(event -> switchToLyricsScene());
         playlist.setOnAction(event -> switchToPlaylistScene());
         playpause.setOnAction(event -> playAndPauseController());
         addSong.setOnAction(event -> loadSongAddress());
@@ -401,6 +407,9 @@ public class MainSceneController {
                         liveSconds = 0;
                     } // inner 1 if ends
                     Live.set(String.format("%02d:%02d", liveMinute, liveSconds));
+
+                    if (lyricsController != null) lyricsController.Live.set(String.format("%02d:%02d", liveMinute, liveSconds));
+
                     lastUpdate = l;
                     if (countLiveSeconds == totalDurationInSeconds && !isLooped && !isShuffled) { // this if stops the song when it is playing solo
                         soundLoader.mediaPlayer.stop();
@@ -411,6 +420,10 @@ public class MainSceneController {
                             playlistController.helperForPlayPause = true; // should always be true here
                             playlistController.miniPlayPauseController(); // calling the mini play pause controller when the song has finished
                         }
+                        if (lyricsController != null) { // same reason as above
+                            lyricsController.helperForPlayPause = true;
+                            lyricsController.playAndPauseButton();
+                        }
                         isPaused = true;
                         resetLiveCountSeconds();
                     } // inner 2 if ends
@@ -418,7 +431,7 @@ public class MainSceneController {
                         soundLoader.mediaPlayer.seek(Duration.seconds(0));
                         resetLiveCountSeconds();
                     } // inner 3 if ends
-                    if (countLiveSeconds == totalDurationInSeconds && isShuffled && opendPlaylist.size() > 1) {
+                    if (countLiveSeconds == totalDurationInSeconds && isShuffled && opendPlaylist.size() > 1) { // this if shuffles the playlist
                         lastIndex = playlistIndex;
                         while (true) { // this loop ensures that to load different song
                             playlistIndex = random.nextInt(opendPlaylist.size());
@@ -548,10 +561,20 @@ public class MainSceneController {
 
     // this method is for like and dislike functionality
     public void likeAndDiskikeController() {
-        Alert commonAlert = new Alert(Alert.AlertType.INFORMATION);
-        commonAlert.initOwner(mainStage);
-        commonAlert.setTitle("Liked songs");
-        commonAlert.setHeaderText(null);
+        Alert likeAlert = new Alert(Alert.AlertType.NONE);
+        likeAlert.initOwner(mainStage);
+        ImageView notificationIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/notification.png"))));
+        notificationIcon.setFitWidth(54);
+        notificationIcon.setFitHeight(54);
+        likeAlert.setTitle("Liked songs");
+        likeAlert.setHeaderText(null);
+        HBox hBox = new HBox(15);
+        hBox.setPadding(new Insets(20, 0,0,20));
+        hBox.setPrefSize(390,70);
+        VBox vBox = new VBox(1);
+        ButtonType gotIt = new ButtonType("Got it", ButtonBar.ButtonData.OK_DONE);
+        likeAlert.getDialogPane().getButtonTypes().add(gotIt);
+
         if (!isLiked && isSongLoaded) {
             try (Connection connection = DriverManager.getConnection(url)){
                 URI uri = new URI(filePath); // converting filepath to uri object
@@ -572,11 +595,32 @@ public class MainSceneController {
                 } // if ends
                 else if (file2.exists()) { // this else if prevents adding selected song to liked list database if it is already in liked
                     filePath = newFilepath; // assigninh new file path to filePath (crucial)
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+
+                    Alert alert = new Alert(Alert.AlertType.NONE);
                     alert.initOwner(mainStage);
-                    alert.setTitle("Information");
+                    alert.setTitle("Like List");
+
+                    ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/notification.png"))));
+                    errorIcon.setFitHeight(54);
+                    errorIcon.setFitWidth(54);
+                    HBox hBox1 = new HBox(15);
+                    hBox1.setPrefSize(415,70);
+                    hBox1.setPadding(new Insets(20, 0,0,20));
+
+                    VBox vBox1 = new VBox(1);
+                    Label title = new Label("Duplicate song detected!");
+                    title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                    Label content = new Label("It appears this song is already in your 'Liked' collection.");
+                    content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                    vBox1.getChildren().addAll(title, content);
+
+                    hBox1.getChildren().addAll(errorIcon, vBox1);
+                    alert.getDialogPane().setContent(hBox1);
                     alert.setHeaderText(null);
-                    alert.setContentText("It appears this song is already in your 'Liked' collection");
+
+                    ButtonType ok = new ButtonType("Okay", ButtonBar.ButtonData.OK_DONE);
+                    alert.getButtonTypes().add(ok);
+
                     if (likedList.contains(filePath)) {
                         alert.showAndWait();
                         return; // omiting following code of method (crucial)
@@ -584,13 +628,11 @@ public class MainSceneController {
                 } // if ends
 
                 if (songsInMusicFolder.containsKey(filePath)) {
-                    int cont = songsInMusicFolder.get(filePath);
-                    if (cont > 1) {
-                        songsInMusicFolder.put(filePath, cont + 1);
-                        updateSongsTable(filePath); // this will increment the use oh song
-                    }
+                    int cont = songsInMusicFolder.get(filePath); // getting the current count
+                    songsInMusicFolder.put(filePath, cont + 1); // update the song count
+                    updateSongsTable(filePath);
                 } else {
-                    addNewSongTrace(filePath);
+                    addNewSongTrace(filePath); // addew song trace
                     songsInMusicFolder.put(filePath, 1);
                 }
 
@@ -622,11 +664,19 @@ public class MainSceneController {
                         opendPlaylist.add(filePath);
                         if (lastRemovedLikedSong.equals(filePath)) { // this if does not let the reload the song
                             dontReplay = false;
+                            // playlistController.listView.getSelectionModel().select(playlistIndex);
                         } // end
                     } // if ends
                 } // main if
-                commonAlert.setContentText("Song added to liked list!");
-                commonAlert.showAndWait();
+
+                Label title = new Label("Song added to liked list!");
+                title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                Label content = new Label("Happy listening!");
+                content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                vBox.getChildren().addAll(title, content);
+                hBox.getChildren().addAll(notificationIcon, vBox);
+                likeAlert.getDialogPane().setContent(hBox);
+                likeAlert.showAndWait();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             } catch (URISyntaxException e) {
@@ -653,15 +703,16 @@ public class MainSceneController {
                     int count = songsInMusicFolder.get(filePath);
                     if (count > 1) {
                         songsInMusicFolder.put(filePath, count - 1);
+                        updateSongsTable(filePath); // updating the song count
                     } else if (count == 1) {
                         deleteSongsTableSingleCountSong(filePath);
                         songsInMusicFolder.remove(filePath);
-                    }
-                }
 
-                PreparedStatement preparedStatement1 = connection.prepareStatement(sql2);
-                preparedStatement1.setString(1,filePath);
-                preparedStatement1.executeUpdate();
+                        PreparedStatement preparedStatement1 = connection.prepareStatement(sql2);
+                        preparedStatement1.setString(1,filePath);
+                        preparedStatement1.executeUpdate();
+                    }
+                } // if end
 
                 if (playlistController != null) {
                     if (playlistController.loadedPlaylist.equals("LIKED SONGS")) {
@@ -683,8 +734,15 @@ public class MainSceneController {
                         } // loop ends
                     } // if inner
                 } // main if
-                commonAlert.setContentText("Song removed from liked list!");
-                commonAlert.showAndWait();
+
+                Label title = new Label("Song removed from liked list!");
+                title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                Label content = new Label("Happy listening!");
+                content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+                vBox.getChildren().addAll(title, content);
+                hBox.getChildren().addAll(notificationIcon, vBox);
+                likeAlert.getDialogPane().setContent(hBox);
+                likeAlert.showAndWait();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             } // try catch ends
@@ -732,7 +790,8 @@ public class MainSceneController {
         liveMinute = 0; // resetting minute
         countLiveSeconds = 0;  // resetting live seconds
         Live.set(String.format("%02d:%02d", liveMinute, liveSconds));
-    }
+        if (lyricsController != null) lyricsController.Live.set(String.format("%02d:%02d", liveMinute, liveSconds));
+    } // method ends
 
     // invoking mediaPlayer to get timeline
     public void invokeMedia() {
@@ -743,8 +802,30 @@ public class MainSceneController {
             if (!isDragging && status == MediaPlayer.Status.PLAYING) {
                 Platform.runLater(() -> {
                     slider.setValue(newValue.toSeconds());
+                    if (lyricsController != null) { // this updates the slider value is lyrics scene
+                        lyricsController.slider.setValue(newValue.toSeconds());
+                    }
                 });
-            }
+            } // if end
+            if (lyricsController != null && status == MediaPlayer.Status.PLAYING && lyricsController.lyricsLoaded == true) {
+                double currentSeconds = newValue.toSeconds();
+
+                for (int i = 0; i < lyricsController.lyrics.size() - 1; i++) {
+                    double start = lyricsController.lyrics.get(i).time;
+                    double next = lyricsController.lyrics.get(i +1).time;
+
+                    // if current time falls between two lyric lines
+                    if (currentSeconds >= start && currentSeconds < next) {
+                        lyricsController.MainLyrics.set(lyricsController.lyrics.get(i).text);
+                        break;
+                    }
+                }
+
+                // if current time falls between two lyric lines
+                if (currentSeconds >= lyricsController.lyrics.get(lyricsController.lyrics.size() - 1).time) {
+                    lyricsController.MainLyrics.set(lyricsController.lyrics.get(lyricsController.lyrics.size() - 1).text);
+                }
+            } // if ended
         });
 
         soundLoader.mediaPlayer.setOnError(() -> {
@@ -812,6 +893,11 @@ public class MainSceneController {
         // it automatically calls toString() method and passes it its current value to get formatted in MM:SS
         slider.setLabelFormatter(new DurationStringConverter()); // this line is important
 
+        if (lyricsController != null) { // this will change the slider value for lyrics scene
+            lyricsController.setSliderValue(0, soundLoader.media.getDuration().toSeconds());
+            lyricsController.formatSlider();
+            lyricsController.setMinuteAndSecond(minute, seconds, liveMinute, liveSconds);
+        }
     } // method ends here
 
     // get main stage reference
@@ -859,87 +945,6 @@ public class MainSceneController {
                     if (event.isControlDown() && event.getCode() == KeyCode.P) {
                         playlistController.miniPlayPauseController();
                     }
-                    // this if for deleting playlist via key event
-                    if (event.isShiftDown() && event.getCode() == KeyCode.DELETE) {
-                        String selection = playlistController.playlists.getValue();
-                        if (selection != null) {
-                           if (selection.equals("LIKED SONGS")) { // if this ensures that liked songs playlist cannot be deleted
-                               Alert alert = new Alert(Alert.AlertType.WARNING);
-                               alert.initOwner(mainStage);
-                               alert.setTitle("Warning");
-                               alert.setHeaderText("LIKED SONGS Playlist cannot be deleted");
-                               alert.setContentText("Try deleting different playlist");
-                               alert.showAndWait();
-                           } else { // this else block deletes playlist
-                               boolean confirmation = getConfirmationForDeletingPlaylist(selection, " playlist");
-                               if (confirmation) { // this if only deletes playlist after user confirmation
-                                   playlistController.playlists.getItems().remove(selection);
-                                   playlistController.playlists.setValue(null);
-                                   // delete from database too later
-                                   selection = selection.toLowerCase();
-                                   selection = selection.replace(" ", "_");
-                                   try (Connection connection = DriverManager.getConnection(url)){ // databas connection
-                                       String sql1 = "DROP TABLE " + selection + ";"; // deleting playlist table
-                                       String sql2 = "DELETE FROM all_playlists WHERE playlists = (?);"; // deleting table name from all_playlist table
-
-                                       Statement statement = connection.createStatement();
-
-                                       PreparedStatement preparedStatement = connection.prepareStatement(sql2);
-                                       preparedStatement.setString(1, selection);
-
-                                       statement.execute(sql1);
-                                       preparedStatement.executeUpdate();
-                                   } catch (SQLException e) {
-                                       throw new RuntimeException(e);
-                                   }
-                               } // if
-                           } // else ends
-                        } // if ends here that checks if selection is not null
-                    } // event handler for deleting playlist ends here
-
-                    // event handler for deleting song
-                    if (event.isControlDown() && event.getCode() == KeyCode.DELETE) {
-                        if (playlistController.isPlaylistLoaded) { // this if ensures that song can be only deleted when playlist is loaded
-                            Song song = playlistController.listView.getSelectionModel().getSelectedItem();
-                            boolean confirmation = getConfirmationForDeletingPlaylist(song.title, "song");
-                            if (confirmation) { // if for only confirmation
-                                String selection = playlistController.playlists.getValue();
-                                if (selection.equals("LIKED SONGS")) {
-                                    deleteSong(selection, song.filepath);
-                                    likedList.remove(song.filepath);
-                                    opendPlaylist.remove(song.filepath);
-                                    playlistController.objectsOfOpendPlaylist.remove(song);
-                                } else {
-                                    deleteSong(selection, song.filepath);
-                                    opendPlaylist.remove(song.filepath);
-                                    playlistController.objectsOfOpendPlaylist.remove(song);
-                                }
-                                if (playlistController.objectsOfOpendPlaylist.isEmpty()) { // restting everything to nothig when there is no son in listview
-                                    timer.stop();
-                                    soundLoader.mediaPlayer.dispose();
-                                    slider.setMax(100);
-                                    slider.setValue(0);
-                                    Length.set("00:00");
-                                    Live.set("00:00");
-
-                                    Image image = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/banner.png")));
-                                    banner.setImage(image);
-                                    Title.set("(Song Title)");
-                                    Artist.set("Artist Name");
-                                    playlistController.setBanner(image);
-                                    playlistController.setTitle("Song Title");
-                                    playlistController.setArtist("Artist Name");
-                                    // setting to default when playlist is empty
-                                    playlistController.helperForPlayPause = true;
-                                    helperForPlayPause = false;
-                                    isSongLoaded = false;
-                                    playlistController.isSongLoaded = false;
-                                    playpause.setGraphic(play);
-                                    playlistController.miniplaypause.setGraphic(playlistController.miniPlay);
-                                } // end
-                            } // if ends
-                        } // if of isPlaylistLoaded ends
-                    } // if for deleting song in playlist via key event
                 }); // event handler ends here
             } catch (Exception e) {
                 System.out.println("Failed to load playlist scene");
@@ -1012,6 +1017,7 @@ public class MainSceneController {
 
     // action listener for add song button
     public void loadSongAddress() {
+        addSong.setDisable(true);
         File selectedFile = fileChooser.showOpenDialog(null);
         if (selectedFile != null) {
             // get file name for checking (e.g., charlie puth - attention.mp3)
@@ -1041,9 +1047,13 @@ public class MainSceneController {
                     playlistController.isPlaylistLoaded = false;
                 } // if ends
 
+                if (lyricsController != null) {
+                    setLyricsSceneToDefault();
+                }
+
             } // inner if ends
         } // main if ends
-
+        addSong.setDisable(false);
     } // method ends here
 
     // method for extracting metadata
@@ -1057,6 +1067,12 @@ public class MainSceneController {
         Title.set(soundLoader.title);
         Artist.set(soundLoader.artist);
         banner.setImage(soundLoader.albumArt);
+
+        if (lyricsController != null) { // this changes the song details for lyrics scene
+            lyricsController.songName.set(soundLoader.title);
+            lyricsController.artistName.set(soundLoader.artist);
+        } // end
+
         this.soundLoader.mediaPlayer.volumeProperty().bind(volumeSlider.valueProperty()); // binding slider with volume
         if (helperForPlayPause) { // this plays the newly loaded song
             soundLoader.mediaPlayer.play();
@@ -1194,6 +1210,7 @@ public class MainSceneController {
         return result;
     } // method ends here
 
+    // this method only count the songs
     public void deleteSongsTableSingleCountSong(String songPath) {
        try (Connection connection = DriverManager.getConnection(url)){
            String sql = "DELETE FROM songsInAppData WHERE songPath = ?;";
@@ -1234,6 +1251,7 @@ public class MainSceneController {
             JFXButton help = new JFXButton("Help center");
             JFXButton policy = new JFXButton("Terms and Privacy policy");
             JFXButton invite = new JFXButton("Share");
+            JFXButton reset = new JFXButton("Reset Application");
             help.setPrefWidth(366);
             help.setAlignment(Pos.CENTER_LEFT);
             help.getStyleClass().add("button-style-for-settings");
@@ -1241,6 +1259,14 @@ public class MainSceneController {
             FontIcon helpIcon = new FontIcon(BootstrapIcons.QUESTION_SQUARE);
             helpIcon.setIconSize(30);
             help.setGraphic(helpIcon);
+
+            reset.setPrefWidth(366);
+            reset.setAlignment(Pos.CENTER_LEFT);
+            reset.getStyleClass().add("button-style-for-settings");
+            reset.setOnAction(event -> resetApp());
+            FontIcon resetIcon = new FontIcon(BootstrapIcons.EXCLAMATION_SQUARE);
+            resetIcon.setIconSize(30);
+            reset.setGraphic(resetIcon);
 
             policy.setPrefWidth(366);
             policy.setAlignment(Pos.CENTER_LEFT);
@@ -1300,6 +1326,12 @@ public class MainSceneController {
                             // changing icons to match theme
                             playlistController.loadIcons("Light Theme");
                         } // end
+
+                        if (lyricsController != null) {
+                            lyricsScene.getStylesheets().clear();
+                            lyricsScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/LyricsScene-light-theme.css")));
+                            lyricsController.loadIcons(appSettings.getTheme());
+                        } // end
                     } else if ("Dark Theme".equals(selected.getText())) {
                         // clearing the previous theme and loading dark theme
                         mainScene.getStylesheets().clear();
@@ -1320,6 +1352,12 @@ public class MainSceneController {
                             // changing icon to match theme
                             playlistController.loadIcons("Dark Theme");
                         } // if ends
+
+                        if (lyricsController != null) {
+                            lyricsScene.getStylesheets().clear();
+                            lyricsScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/LyricsScene-dark-theme.css")));
+                            lyricsController.loadIcons(appSettings.getTheme());
+                        } // end
                     } // dark theme if
                 } // end
             });
@@ -1401,7 +1439,7 @@ public class MainSceneController {
 
         Accordion accordion = new Accordion(titledPane, titledPane1);
         VBox vBox = new VBox(accordion);
-        content.getChildren().addAll(vBox, help, policy, invite);
+        content.getChildren().addAll(vBox, help, policy, reset, invite);
         showSettings.getDialogPane().setContent(scrollPane); // scrollPane
         showSettings.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
 
@@ -1451,8 +1489,25 @@ public class MainSceneController {
 
         TextFlow t2 = new TextFlow(s1_1, st1_1, s1_2, st1_2, s1_3, st1_3);
 
-        Label sub3 = new Label("\uD83C\uDFB6 Features");
+        Label sub3 = new Label("\uD83C\uDFB6 Lyrics");
         sub3.setStyle("-fx-font-weight: bold; -fx-font-size: 22px; -fx-text-fill: blue;");
+
+        Text s7_1 = new Text("• Add Lyrics : ");
+        s7_1.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st6_1 = new Text("Pick an .lrc file to attach to the song.\n");
+        st6_1.setStyle("-fx-font-size: 18px;");
+
+        Text s7_2 = new Text("• Change Lyrics : ");
+        s7_2.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st6_2 = new Text("Replace the current lyrics with a new\n   file.\n");
+        st6_2.setStyle("-fx-font-size: 18px;");
+
+        Text s7_3 = new Text("• Remove Lyrics : ");
+        s7_3.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: blue;");
+        Text st6_3 = new Text("Detach the lyrics from the song.");
+        st6_3.setStyle("-fx-font-size: 18px;");
+
+        TextFlow t7 = new TextFlow(s7_1, st6_1, s7_2, st6_2, s7_3, st6_3);
 
         Label sub4 = new Label("\uD83D\uDD04 Playback Controls");
         sub4.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: blue;");
@@ -1571,7 +1626,7 @@ public class MainSceneController {
         VBox.setMargin(heading1, new Insets(15, 0, 0, 0));
         VBox.setMargin(hyperlink, new Insets(0, 0, 0, -5));
 
-        content.getChildren().addAll(helpIcon, helpTitle, heading1, sub1, t1, sub2, t2, sub3, sub4, t3, sub5, t4, sub6, t5, sub7, t6, sub8, s6_1, hyperlink, socials);
+        content.getChildren().addAll(helpIcon, helpTitle, heading1, sub1, t1, sub2, t2, sub3, t7, sub4, t3, sub5, t4, sub6, t5, sub7, t6, sub8, s6_1, hyperlink, socials);
 
         scrollPane.setContent(content);
         helpWindow.getDialogPane().setContent(scrollPane);
@@ -1764,6 +1819,211 @@ public class MainSceneController {
         Button closeButton = (Button) shareWindow.getDialogPane().lookupButton(close);
         closeButton.setManaged(false);
         shareWindow.show();
+    } // method ends
+
+    public void switchToLyricsScene() {
+        if (!isLyricsSceneCreated) {
+            isLyricsSceneCreated = true;
+            try {
+                FXMLLoader loader = new FXMLLoader(MainSceneController.class.getResource("/com/example/amplify/LyricsScene.fxml"));
+                Parent parent = loader.load();
+                lyricsController = loader.getController();
+                lyricsScene = new Scene(parent, 500, 600);
+
+                if (appSettings.getTheme().equals("Light Theme")) {
+                    lyricsScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/LyricsScene-light-theme.css")));
+                } else if (appSettings.getTheme().equals("Dark Theme")) {
+                    lyricsScene.getStylesheets().add(String.valueOf(getClass().getResource("/com/example/amplify/LyricsScene-dark-theme.css")));
+                }
+                lyricsScene.setOnKeyPressed(event -> {
+                    if (event.isControlDown() && event.getCode() == KeyCode.P) {
+                        lyricsController.playAndPauseButton();
+                    }
+                });
+                lyricsController.loadIcons(appSettings.getTheme());
+                lyricsController.setController(this);
+                sendSongInfoToLyricsScene();
+                mainStage.setScene(lyricsScene);
+                mainStage.show();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            sendSongInfoToLyricsScene();
+            mainStage.setScene(lyricsScene);
+            mainStage.show();
+        }
+
+    } // method ends
+
+    public void sendSongInfoToLyricsScene() {
+        if (isSongLoaded && !opendPlaylist.isEmpty()) { // this still needed
+            lyricsController.setStage(mainStage);
+            lyricsController.setScene(mainScene);
+            lyricsController.setTitleName(soundLoader.title);
+            lyricsController.setArtistName(soundLoader.artist);
+            lyricsController.setSliderValue(slider.getValue(), soundLoader.media.getDuration().toSeconds());
+            lyricsController.formatSlider();
+            lyricsController.setMinuteAndSecond(minute, seconds, liveMinute, liveSconds);
+            // this if load the lyrics
+            if (lyricsController.lyricsInStored.containsKey(filePath)) {
+                String lyricsFile = lyricsController.lyricsInStored.get(filePath);
+                File file = new File(lyricsFile);
+                if (file.exists()) {
+                    lyricsController.lyricsLoaded = true; // make it true to show thw lyrics
+                    lyricsController.addLyricsLayout.setVisible(false);
+                    lyricsController.middleLyrics.setVisible(true);
+                    lyricsController.loadLyrics(lyricsController.lyricsInStored.get(filePath));
+
+                    lyricsController.change.setDisable(false);
+                    lyricsController.change.setVisible(true);
+                    lyricsController.remove.setDisable(false);
+                    lyricsController.remove.setVisible(true);
+                } else {
+                    setLyricsSceneToDefault();
+                    deleteLyricsFromDatabase();
+                }
+            } else { // reverse action
+                setLyricsSceneToDefault();
+            }
+        } else {
+            lyricsController.setStage(mainStage);
+            lyricsController.setScene(mainScene);
+            lyricsController.setTitleName("(Song Title)");
+            lyricsController.setArtistName("Artist Name");
+            lyricsController.setSliderValue(slider.getValue(), 100);
+            lyricsController.setMinuteAndSecond(minute, seconds, liveMinute, liveSconds);
+        }
+        lyricsController.setEssentials(helperForPlayPause);
+    } // method end
+
+    public void loadTheNextLyrics() {
+        if (lyricsController != null) {
+            boolean lyricsExistsInFolder = lyricsController.lyricsInStored.containsKey(filePath);
+            if (lyricsExistsInFolder) {
+                String lyricsFile = lyricsController.lyricsInStored.get(filePath);
+                File file = new File(lyricsFile);
+                if (file.exists()) { // this will check the live status of the lyrics file
+                    lyricsController.MainLyrics.set(""); // clearing the last string of lyrics
+                    lyricsController.lyricsLoaded = true; // make it true to show thw lyrics
+                    lyricsController.addLyricsLayout.setVisible(false);
+                    lyricsController.middleLyrics.setVisible(true);
+                    lyricsController.loadLyrics(lyricsController.lyricsInStored.get(filePath));
+
+                    lyricsController.change.setDisable(false);
+                    lyricsController.change.setVisible(true);
+                    lyricsController.remove.setDisable(false);
+                    lyricsController.remove.setVisible(true);
+                } else {
+                    setLyricsSceneToDefault();
+                    deleteLyricsFromDatabase();
+                } // end
+            } else {
+                setLyricsSceneToDefault();
+            } // end
+        } // main if ended
+    } // method ends
+
+    public void setLyricsSceneToDefault() {
+        lyricsController.lyricsLoaded = false;
+        lyricsController.addLyricsLayout.setVisible(true);
+        lyricsController.middleLyrics.setVisible(false);
+
+        lyricsController.change.setDisable(true);
+        lyricsController.change.setVisible(false);
+        lyricsController.remove.setDisable(true);
+        lyricsController.remove.setVisible(false);
+    } // method ends
+
+    public void deleteLyricsFromDatabase() {
+        try (Connection connection = DriverManager.getConnection(url)){
+            String sql = "DELETE FROM Lyrics WHERE song = ?;";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, filePath);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        lyricsController.lyricsInStored.remove(filePath);
+    } // method ends
+
+    public void resetApp() {
+        boolean confirmation = getResetConfirmation(mainStage);
+        if (confirmation) {
+
+            Path dataPath = Paths.get(System.getenv("LOCALAPPDATA"), "AmplifyMusic");
+
+            if (Files.exists(dataPath)) {
+                try {
+                    Files.walk(dataPath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+                    showResetMessage();
+                    Platform.exit(); // closing the app
+                    System.exit(0); // closing the app
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } // end
+
+        } // end
+    } // method ends
+
+    public void showResetMessage() {
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        alert.initOwner(mainStage);
+        alert.setTitle("Data Reset Complete");
+
+        ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/notification.png"))));
+        errorIcon.setFitHeight(54);
+        errorIcon.setFitWidth(54);
+        HBox hBox = new HBox(15);
+        hBox.setPrefSize(420,70);
+        hBox.setPadding(new Insets(20, 0,0,20));
+
+        VBox vBox = new VBox(1);
+        Label title = new Label("App data has been reset successfully!");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label("Please close and relaunch the app to start fresh.");
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+
+        vBox.getChildren().addAll(title, content);
+
+        hBox.getChildren().addAll(errorIcon, vBox);
+        alert.getDialogPane().setContent(hBox);
+        alert.setHeaderText(null);
+
+        ButtonType ok = new ButtonType("Close App", ButtonBar.ButtonData.OK_DONE);
+        alert.getButtonTypes().add(ok);
+
+        alert.showAndWait();
+    } // method ends
+
+    public static boolean getResetConfirmation(Stage stage) {
+        Alert alertExit = new Alert(Alert.AlertType.NONE);
+        ImageView exitIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/question.png"))));
+        exitIcon.setFitWidth(54);
+        exitIcon.setFitHeight(54);
+        alertExit.setTitle("Reset App");
+        alertExit.setHeaderText(null);
+        HBox hBox = new HBox(15);
+        hBox.setPadding(new Insets(20, 0,0,20));
+        VBox vBox = new VBox(1);
+        Label title = new Label("Are you sure you want to reset?");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label("All user data, including settings, playlist, and cached information, will be wiped and restored to default.");
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+        content.setWrapText(true);
+        vBox.getChildren().addAll(title, content);
+
+        HBox.setMargin(exitIcon, new Insets(10, 0, 0, 0));
+        hBox.getChildren().addAll(exitIcon, vBox);
+        hBox.setPrefSize(410,90);
+        alertExit.getDialogPane().setContent(hBox);
+
+        ButtonType exitButton = new ButtonType("Reset", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alertExit.getButtonTypes().setAll(exitButton, cancelButton);
+        alertExit.initOwner(stage);
+        return alertExit.showAndWait().orElse(cancelButton) == exitButton;
     } // method ends
 
 } // class ends here

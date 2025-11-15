@@ -1,0 +1,48 @@
+@font-face {
+    font-family: "Poppins Bold";
+    src: url("../../../fonts/Poppins-Bold.ttf");
+}
+
+@font-face {
+    font-family: "Poppins";
+    src: url("../../../fonts/Poppins-Regular.ttf");
+}
+
+#title {
+    -fx-font-family: "Poppins Bold";
+    -fx-font-size: 36px;
+}
+
+#artist {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 18px;
+}
+
+#lyricsSceneFXML {
+    -fx-background-color: linear-gradient(to bottom, #444444, #000000);
+}
+
+.jfx-slider {
+    -jfx-default-thumb: #669999;
+}
+.jfx-slider .thumb {
+    -fx-background-color: #669999;
+}
+
+.jfx-button {
+    -fx-background-color: #669999;
+}
+
+#playAndpause {
+    -fx-background-color: transparent;
+}
+#playAndpause .jfx-rippler {
+    -jfx-rippler-fill: #9fbfdf;
+}
+
+#addLyrics {
+    -fx-background-color: transparent;
+    -fx-border-color: white;
+    -fx-border-style: dashed;
+    -fx-text-fill: white;
+}

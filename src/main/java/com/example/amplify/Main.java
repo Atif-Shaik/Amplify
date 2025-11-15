@@ -136,13 +136,17 @@ public class Main extends Application {
         File amplifyMusicdir = new File(basePath, "AmplifyMusic");
 
         if (!amplifyMusicdir.exists()) {
-            boolean created = amplifyMusicdir.mkdirs();
-            String amplifyMusicdirPath = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
-            File musicdir = new File(amplifyMusicdirPath, "Music");
-            if (!musicdir.exists()) {
-                boolean created1 = musicdir.mkdirs();
-            }
+            boolean created = amplifyMusicdir.mkdirs(); // this creates folder
         } // if ends
+        String amplifyMusicdirPath = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic";
+        File musicdir = new File(amplifyMusicdirPath, "Music");
+        File lyricsdir = new File(amplifyMusicdirPath, "Lyrics");
+        if (!musicdir.exists()) {
+            boolean created1 = musicdir.mkdirs();
+        }
+        if (!lyricsdir.exists()) {
+            boolean created2 = lyricsdir.mkdirs();
+        }
 
         String dbPath = userDir + File.separator + "appdata.db";
         url = "jdbc:sqlite:" + dbPath; // full path of writable database
@@ -162,12 +166,16 @@ public class Main extends Application {
             String sql4 = "CREATE TABLE IF NOT EXISTS songsInAppData (" +
                     "songPath TEXT NOT NULL UNIQUE," +
                     "songCount INTEGER);";
+            String sql5 = "CREATE TABLE IF NOT EXISTS Lyrics (" +
+                    "song TEXT NOT NULL UNIQUE," +
+                    "lyrics TEXT NOT NULL UNIQUE);";
 
             Statement statement = connection.createStatement();
             statement.execute(sql1);
             statement.execute(sql2);
             statement.execute(sql3);
             statement.execute(sql4);
+            statement.execute(sql5);
         } catch (SQLException e) {
             System.out.println(url);
             System.out.println("Failed to connect with database");

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXButton?>
+<?import com.jfoenix.controls.JFXSlider?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane fx:id="lyricsSceneFXML" prefHeight="600.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.amplify.LyricsController">
+   <children>
+      <JFXSlider fx:id="slider" layoutX="21.0" layoutY="406.0" prefHeight="14.0" prefWidth="457.0" />
+      <JFXButton fx:id="backward" layoutX="55.0" layoutY="472.0" prefHeight="64.0" prefWidth="64.0" />
+      <JFXButton fx:id="forward" layoutX="364.0" layoutY="472.0" prefHeight="64.0" prefWidth="64.0" />
+      <JFXButton fx:id="playAndpause" layoutX="177.0" layoutY="440.0" prefHeight="128.0" prefWidth="128.0" />
+      <Label fx:id="title" alignment="CENTER" contentDisplay="CENTER" layoutY="275.0" prefHeight="50.0" prefWidth="500.0" text="(Song Title)" textFill="WHITE">
+         <font>
+            <Font size="36.0" />
+         </font>
+      </Label>
+      <Label fx:id="artist" alignment="CENTER" contentDisplay="CENTER" layoutY="325.0" prefHeight="29.0" prefWidth="500.0" text="Artist Name" textFill="WHITE" />
+      <Label fx:id="totalSeconds" alignment="CENTER" layoutX="420.0" layoutY="420.0" prefHeight="29.0" prefWidth="58.0" text="00:00" textFill="WHITE">
+         <font>
+            <Font name="Candara" size="18.0" />
+         </font>
+      </Label>
+      <Label fx:id="liveSeconds" alignment="CENTER" layoutX="23.0" layoutY="420.0" prefHeight="29.0" prefWidth="58.0" text="00:00" textFill="WHITE">
+         <font>
+            <Font name="Candara" size="18.0" />
+         </font>
+      </Label>
+      <AnchorPane fx:id="baseOfLyrics" layoutX="13.0" layoutY="9.0" prefHeight="266.0" prefWidth="471.0">
+         <children>
+            <Label fx:id="middleLyrics" alignment="CENTER" contentDisplay="RIGHT" layoutX="7.0" layoutY="23.0" prefHeight="220.0" prefWidth="457.0" text="Middle lyrics line " textFill="WHITE">
+               <font>
+                  <Font name="Arial Black" size="24.0" />
+               </font>
+            </Label>
+            <AnchorPane fx:id="addLyricsLayout" layoutX="113.0" layoutY="6.0" prefHeight="253.0" prefWidth="245.0">
+               <children>
+                  <ImageView fitHeight="160.0" fitWidth="160.0" layoutX="43.0" layoutY="14.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../icons/lyrics.png" />
+                     </image>
+                  </ImageView>
+                  <JFXButton fx:id="addLyrics" layoutX="67.0" layoutY="188.0" prefHeight="32.0" prefWidth="111.0" text="Add Lyrics">
+                     <font>
+                        <Font name="System Bold Italic" size="12.0" />
+                     </font>
+                  </JFXButton>
+               </children>
+            </AnchorPane>
+            <JFXButton fx:id="change" buttonType="RAISED" layoutX="395.0" layoutY="10.0" prefHeight="24.0" prefWidth="24.0" />
+            <JFXButton fx:id="remove" buttonType="RAISED" layoutX="434.0" layoutY="10.0" prefHeight="24.0" prefWidth="24.0" />
+            <JFXButton fx:id="back" buttonType="RAISED" layoutX="5.0" layoutY="10.0" prefHeight="32.0" prefWidth="32.0" />
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>

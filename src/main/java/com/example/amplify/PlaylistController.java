@@ -152,7 +152,7 @@ public class PlaylistController {
                         listView.getSelectionModel().select(mainSceneController.playlistIndex);
                     }
                 } // if ends
-
+                mainSceneController.loadTheNextLyrics(); // this adds lyrics if available
                 mainSceneController.letItPlay = false;
                 mainSceneController.dontReplay = true; // this line ensures that all other selected songs should be loaded
             } // if ends

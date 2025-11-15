@@ -20,7 +20,10 @@
             <Image url="@../../../icons/banner.png" />
          </image>
       </ImageView>
-      <Label fx:id="song_title" alignment="CENTER" contentDisplay="CENTER" layoutY="275.0" prefHeight="50.0" prefWidth="500.0" textFill="WHITE" textOverrun="CLIP" />
+      <Label fx:id="song_title" alignment="CENTER" contentDisplay="CENTER" layoutY="275.0" prefHeight="50.0" prefWidth="500.0" text="(Song Title)" textFill="WHITE" textOverrun="CLIP">
+         <font>
+            <Font size="36.0" />
+         </font></Label>
       <Label fx:id="artist_name" alignment="CENTER" contentDisplay="CENTER" layoutY="325.0" prefHeight="29.0" prefWidth="500.0" text="Artist Name" textFill="WHITE">
          <font>
             <Font name="Sylfaen" size="18.0" />
