@@ -1250,13 +1250,13 @@ public class MainSceneController {
 
             JFXButton help = new JFXButton("Help center");
             JFXButton policy = new JFXButton("Terms and Privacy policy");
-            JFXButton invite = new JFXButton("Share");
+            JFXButton invite = new JFXButton("Share Application");
             JFXButton reset = new JFXButton("Reset Application");
             help.setPrefWidth(366);
             help.setAlignment(Pos.CENTER_LEFT);
             help.getStyleClass().add("button-style-for-settings");
             help.setOnAction(event -> openHelpWindow());
-            FontIcon helpIcon = new FontIcon(BootstrapIcons.QUESTION_SQUARE);
+            FontIcon helpIcon = new FontIcon(FontAwesomeSolid.QUESTION_CIRCLE);
             helpIcon.setIconSize(30);
             help.setGraphic(helpIcon);
 
@@ -1264,14 +1264,14 @@ public class MainSceneController {
             reset.setAlignment(Pos.CENTER_LEFT);
             reset.getStyleClass().add("button-style-for-settings");
             reset.setOnAction(event -> resetApp());
-            FontIcon resetIcon = new FontIcon(BootstrapIcons.EXCLAMATION_SQUARE);
+            FontIcon resetIcon = new FontIcon(FontAwesomeSolid.REDO_ALT);
             resetIcon.setIconSize(30);
             reset.setGraphic(resetIcon);
 
             policy.setPrefWidth(366);
             policy.setAlignment(Pos.CENTER_LEFT);
             policy.getStyleClass().add("button-style-for-settings");
-            FontIcon policyIcon = new FontIcon(BootstrapIcons.INFO_SQUARE);
+            FontIcon policyIcon = new FontIcon(FontAwesomeSolid.SHIELD_ALT);
             policyIcon.setIconSize(30);
             policy.setGraphic(policyIcon);
             policy.setOnAction(e -> openLinks("https://atif-shaik.github.io/AmplifMax-privacy-policy/"));
@@ -1279,7 +1279,7 @@ public class MainSceneController {
             invite.setPrefWidth(366);
             invite.setAlignment(Pos.CENTER_LEFT);
             invite.getStyleClass().add("button-style-for-settings");
-            FontIcon inviteIcon = new FontIcon(FontAwesomeRegular.SHARE_SQUARE);
+            FontIcon inviteIcon = new FontIcon(BootstrapIcons.SHARE_FILL);
             inviteIcon.setIconSize(30);
             invite.setGraphic(inviteIcon);
             invite.setOnAction(e -> shareDialog());

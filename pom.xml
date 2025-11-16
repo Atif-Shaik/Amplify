@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>Amplify</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <name>Amplify</name>
+    <artifactId>AmplifyMAX</artifactId>
+    <version>1.0.1.0-SNAPSHOT</version>
+    <name>AmplifyMAX</name>
 
     <repositories>
         <repository>
