@@ -1018,7 +1018,7 @@ public class MainSceneController {
     // action listener for add song button
     public void loadSongAddress() {
         addSong.setDisable(true);
-        File selectedFile = fileChooser.showOpenDialog(null);
+        File selectedFile = fileChooser.showOpenDialog(mainStage);
         if (selectedFile != null) {
             // get file name for checking (e.g., charlie puth - attention.mp3)
             String filename = selectedFile.getName().toLowerCase(Locale.ROOT);
