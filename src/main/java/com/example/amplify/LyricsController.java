@@ -294,7 +294,7 @@ public class LyricsController {
                         }
                     } // if ends
                 } // inner if 2 ended
-            } // inner if 1 ended
+            } // inner if 1 ended  
             addLyrics.setDisable(false);
         } else {
             Alert alert = new Alert(Alert.AlertType.NONE);
