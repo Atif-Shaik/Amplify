@@ -3,11 +3,6 @@ package com.example.amplify;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.logging.LogManager;
 
 import com.example.setting.Settings;
@@ -198,10 +193,8 @@ public class Main extends Application {
 
     @Override
     public void stop() { // this run when the app closes
-        if (mainSceneController.scheduler != null) { // this if is important to release scheduler resources
-            mainSceneController.sleepTask.cancel(false);
-            mainSceneController.scheduler.shutdownNow();
-        }
+        mainSceneController.shutdownSleepTimer();
+        mainSceneController.shutdownBluetoothListener();
     } // method ends
 
     public static void main(String[] args) {

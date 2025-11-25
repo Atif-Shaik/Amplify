@@ -230,6 +230,7 @@ public class LyricsController {
     } // method ends
 
     public void loadLyrics(String filePath) {
+        MainLyrics.set(""); // resetting the last lyrics line
         lyrics.clear(); // clearing the lyrics for reuse
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))){ // "C:\\Users\\atifs\\Downloads\\Attention - Charlie Puth.lrc"
             String line;
@@ -264,37 +265,37 @@ public class LyricsController {
             addLyrics.setDisable(true);
             File selectedFile = fileChooser.showOpenDialog(mainStage);
             if (selectedFile != null) {
+                MainLyrics.set(""); // resetting the last lyrics line
                 String fileName = selectedFile.getName().toLowerCase(Locale.ROOT);
-                if (fileName.endsWith(".lrc")) {
-                    String lyricsFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Lyrics";
 
-                    Path targetFolderPath = Paths.get(lyricsFolder); // getting the path of lyrics folder
-                    Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied lyrics
-                    Path sourcePath = selectedFile.toPath(); // getting the path of the selected
+                String lyricsFolder = System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "Lyrics";
 
-                    String finalPath = targetPath.toString();
-                    File file = new File(finalPath);
-                    if (!file.exists()) {
-                        try {
-                            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the lyrics into app's data
-                            lyricsInStored.put(mainSceneController.filePath, finalPath);
-                            storeLyricsIntoDatabase(mainSceneController.filePath, finalPath);
-                            loadLyrics(finalPath);
-                            addLyricsLayout.setVisible(false);
-                            middleLyrics.setVisible(true);
-                            lyricsLoaded = true;
+                Path targetFolderPath = Paths.get(lyricsFolder); // getting the path of lyrics folder
+                Path targetPath = targetFolderPath.resolve(selectedFile.getName()); // creating the full path for copied lyrics
+                Path sourcePath = selectedFile.toPath(); // getting the path of the selected
 
-                            change.setDisable(false);
-                            change.setVisible(true);
-                            remove.setDisable(false);
-                            remove.setVisible(true);
+                String finalPath = targetPath.toString();
+                File file = new File(finalPath);
+                if (!file.exists()) {
+                    try {
+                        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING); // copying the lyrics into app's data
+                        lyricsInStored.put(mainSceneController.filePath, finalPath);
+                        storeLyricsIntoDatabase(mainSceneController.filePath, finalPath);
+                        loadLyrics(finalPath);
+                        addLyricsLayout.setVisible(false);
+                        middleLyrics.setVisible(true);
+                        lyricsLoaded = true;
 
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    } // if ends
-                } // inner if 2 ended
-            } // inner if 1 ended  
+                        change.setDisable(false);
+                        change.setVisible(true);
+                        remove.setDisable(false);
+                        remove.setVisible(true);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } // if ends
+            } // inner if 1 ended
             addLyrics.setDisable(false);
         } else {
             Alert alert = new Alert(Alert.AlertType.NONE);
@@ -345,6 +346,7 @@ public class LyricsController {
         change.setDisable(true);
         File selectedFile = fileChooser.showOpenDialog(mainStage);
         if (selectedFile != null) {
+            MainLyrics.set(""); // resetting the last lyrics line
             String filePath = selectedFile.toString();
             if (lyricsInStored.containsKey(mainSceneController.filePath)) {
                 File storedFile = new File(lyricsInStored.get(mainSceneController.filePath));
