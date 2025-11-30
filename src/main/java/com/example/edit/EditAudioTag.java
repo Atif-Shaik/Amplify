@@ -41,10 +41,8 @@ public class EditAudioTag {
     String filePath, title, artist, album, imagePath;
     AudioFile audioFile;
     Tag tag;
-    Artwork artwork, newArtwork;
-    Image albumArt, newAlbumArt;
+    Artwork artwork;
     Stage mainStage;
-    String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
 
 
     public EditAudioTag(String filePath, Stage mainStage) {
@@ -153,32 +151,6 @@ public class EditAudioTag {
         } // if ended for album
 
     } // method ends
-
-    public void copyImage() {
-        Path localState = Path.of(System.getenv("LOCALAPPDATA"), "AmplifyMusic", "Artworks");
-        try {
-            Files.createDirectories(localState);
-            Path targetPath = localState.resolve(new File(imagePath).getName());
-            Path sourcePath = new File(imagePath).toPath();
-            File file = new File(targetPath.toString());
-
-            if (!file.exists()) {
-                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    } // method ends
-
-    public Image getAlbumArt() {
-        return albumArt;
-    }
-    public String getSongTitle() { return title; }
-    public String getSongArtist() {
-        return artist;
-    }
-    public String getAlbum() { return album; }
-    public String getFilePath() { return filePath;}
 
     public void setNewSongDetails(String imagePath, String title, String artist, String album) {
         this.imagePath = imagePath;

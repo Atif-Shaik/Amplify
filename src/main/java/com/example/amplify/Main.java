@@ -164,12 +164,6 @@ public class Main extends Application {
             String sql5 = "CREATE TABLE IF NOT EXISTS Lyrics (" +
                     "song TEXT NOT NULL UNIQUE," +
                     "lyrics TEXT NOT NULL UNIQUE);";
-            String sql6 = "CREATE TABLE IF NOT EXISTS tag (" +
-                    "songPath TEXT NOT NULL UNIQUE," +
-                    "artwork TEXT NOT NULL," +
-                    "title TEXT NOT NULL," +
-                    "artist TEXT NOT NULL," +
-                    "album TEXT NOT NULL);";
 
             Statement statement = connection.createStatement();
             statement.execute(sql1);
