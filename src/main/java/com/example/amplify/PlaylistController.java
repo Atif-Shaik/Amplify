@@ -1,5 +1,6 @@
 package com.example.amplify;
 
+import com.example.edit.EditAudioTag;
 import com.jfoenix.controls.*;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -19,8 +20,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -32,6 +31,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
+import javafx.util.Duration;
 import org.kordamp.ikonli.bootstrapicons.BootstrapIcons;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -40,10 +40,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.channels.FileChannel;
+import java.nio.file.*;
 import java.sql.*;
 import java.util.*;
 
@@ -66,7 +64,7 @@ public class PlaylistController {
     String selection;
     String loadedPlaylist = "Empty";
     MainSceneController mainSceneController;
-    FileChooser fileChooser;
+    FileChooser fileChooser, imageChooser;
     SoundLoader soundLoader;
     String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
     SimpleStringProperty Title, Artist;
@@ -74,6 +72,7 @@ public class PlaylistController {
     public boolean helperForPlayPause;
     public boolean isPlaylistLoaded = false;
     public boolean isCellCustomized = false;
+    boolean isEditing = false;
     int invalidSongPath = 0, maxText = 18;
     ArrayList<String> removedFilePaths;
     ObservableList<Song> objectsOfOpendPlaylist;
@@ -83,31 +82,18 @@ public class PlaylistController {
 
     ImageView miniPlay, miniPause, insta, linkedin;
     FontIcon backIcon, manageIcon;
+    String selectedAlbumArtPath, newTitleForSong, newArtistName, newAlbumName;
 
     public void initialize() {
         soundLoader = new SoundLoader();
         fileChooser = new FileChooser();
+        imageChooser = new FileChooser();
         removedFilePaths = new ArrayList<>();
 
         objectsOfOpendPlaylist = FXCollections.observableArrayList();
         // initializing combo box
         playlists.setPromptText("Select Playlist");
         loadPlaylistNames();
-
-        ContextMenu menu = new ContextMenu();
-        MenuItem rename = new MenuItem("Rename playlist");
-        MenuItem shuffle = new MenuItem("Shuffle the playlist");
-        MenuItem delete = new MenuItem("Delete the playlist");
-        menu.getItems().addAll(rename, shuffle, delete);
-
-        //playlists.setContextMenu(menu);
-        playlists.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-            if (event.getButton() == MouseButton.SECONDARY) {
-              //  playlists.getItems().clear();
-                event.consume();
-                System.out.println("Ok");
-            }
-        });
 
         // getting icons
         backIcon = new FontIcon(FontAwesomeSolid.REPLY);
@@ -188,6 +174,8 @@ public class PlaylistController {
 
         fileChooser.setTitle("Select an audio file");
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Audio Files","*.mp3", "*.wav", "*.aac"));
+        imageChooser.setTitle("Select an image");
+        imageChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Images", "*.jpeg", "*.png", "*.jpg"));
 
         // binding section
         Title = new SimpleStringProperty("Song Title");
@@ -264,7 +252,7 @@ public class PlaylistController {
 
                             mainSceneController.dontReplay = true; // this ensures that song can be loaded when clicked
                             soundLoader.openSong(filePath);
-                            Song song = new Song(soundLoader.albumArt, filePath, soundLoader.title, soundLoader.artist);
+                            Song song = new Song(soundLoader.albumArt, filePath, soundLoader.title, soundLoader.artist, soundLoader.album);
                             objectsOfOpendPlaylist.add(song); // adding new song to listview
                             mainSceneController.opendPlaylist.add(filePath); // adding new song to opened playlist
 
@@ -509,11 +497,12 @@ public class PlaylistController {
                     showInvalidAudioFileMessage();
                     showEmptyPlaylistMessage();
                 } // else if ends here
-
-                listView.getSelectionModel().select(0); // this line sets the initial song after playlist is loaded
-                // these following lines work for all playlist (it is must)
-                mainSceneController.playlistIndex = 0; // setting index to 0 for default
-                mainSceneController.fullyLoadSong(); // loading first song after playlist selection
+                if (!isEditing) { // to avoid double selection after metadata edit
+                    listView.getSelectionModel().select(0); // this line sets the initial song after playlist is loaded
+                    // these following lines work for all playlist (it is must)
+                    mainSceneController.playlistIndex = 0; // setting index to 0 for default
+                    mainSceneController.fullyLoadSong(); // loading first song after playlist selection
+                } // end
             } else { // this else block displays message for currently loaded playlist
                 Alert alert = new Alert(Alert.AlertType.NONE);
                 alert.setTitle("Load Error");
@@ -633,7 +622,7 @@ public class PlaylistController {
                checkValidation = checkingFileExistance(path); // this method will check the validation of song
                if (checkValidation) { // if for opening only valid songs
                    soundLoader.openSong(path); // loading song details for preparing song object
-                   Song song = new Song(soundLoader.albumArt, path, soundLoader.title, soundLoader.artist);
+                   Song song = new Song(soundLoader.albumArt, path, soundLoader.title, soundLoader.artist, soundLoader.album);
                    if (help == 0) {
                        Title.set(song.title);
                        Artist.set(song.artist);
@@ -680,6 +669,7 @@ public class PlaylistController {
             ImageView image;
             Label title;
             Label artist;
+            Label album;
             HBox hBox;
             VBox vBox;
 
@@ -698,12 +688,25 @@ public class PlaylistController {
                         image.setImage(null);
                     }
                     title = new Label(song.title);
-                    title.setFont(Font.font("Candara", FontWeight.BOLD, FontPosture.ITALIC, 25));
+                    title.setFont(Font.font("Verdana", FontWeight.BOLD, 18));
 
+                    Label t1 = new Label("Artist: ");
+                    t1.setFont(Font.font("Verdana", FontWeight.BOLD,  15));
                     artist = new Label(song.artist);
-                    artist.setFont(Font.font("Arial", 15));
+                    artist.setFont(Font.font("Verdana",  15));
+                    HBox artistBox = new HBox(t1, artist);
 
-                    vBox = new VBox(title, artist);
+                    Label t2 = new Label("Album: ");
+                    t2.setFont(Font.font("Verdana", FontWeight.BOLD,  15));
+                    album = new Label(song.album);
+                    album.setFont(Font.font("Verdana",  15));
+                    HBox albumBox = new HBox(t2, album);
+
+                    vBox = new VBox(title, artistBox, albumBox);
+
+                    VBox.setMargin(title, new Insets(10, 0, 0, 0));
+                    VBox.setMargin(artistBox, new Insets(10, 0, 0, 0));
+
                     hBox = new HBox(image, vBox);
                     hBox.getStyleClass().add("custom-cell");
                     setText(null); // this is important it does not add the default toString method's content of class
@@ -719,7 +722,7 @@ public class PlaylistController {
 
                     MenuItem loop = new MenuItem("Loop the song");
                     FontIcon loopIcon = new FontIcon(BootstrapIcons.ARROW_REPEAT);
-                    loopIcon.setIconSize(22);
+                    loopIcon.setIconSize(24);
                     loop.setGraphic(loopIcon);
                     loop.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
                     loop.setOnAction(e -> loopTheSong());
@@ -730,12 +733,292 @@ public class PlaylistController {
                     delete.setGraphic(deleteIcon);
                     delete.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
                     delete.setOnAction( e -> removeSong());
-                    menu.getItems().addAll(shuffle, loop, delete);
+
+                    MenuItem edit = new MenuItem("Edit song details");
+                    FontIcon editIcon = new FontIcon(BootstrapIcons.PENCIL_SQUARE);
+                    editIcon.setIconSize(22);
+                    edit.setGraphic(editIcon);
+                    edit.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-font-weight: bold;");
+                    edit.setOnAction(e -> openTagEditPanel());
+
+                    menu.getItems().addAll(shuffle, loop, edit, delete);
                     setContextMenu(menu);
                 } // else ends
 
             } // method
         }); // cell factory ends here
+    } // method ends
+
+    public void openTagEditPanel() {
+        Dialog<Void> editPanel = new Dialog<>();
+        editPanel.setTitle("Edit Metadata Tags");
+        editPanel.initOwner(mainStage);
+        VBox base = new VBox(15);
+        base.setPrefSize(480, 500);
+        base.setAlignment(Pos.TOP_CENTER);
+
+        newTitleForSong = "None"; newArtistName = "None"; newAlbumName = "None"; selectedAlbumArtPath = "None";
+
+        ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+        editPanel.getDialogPane().getButtonTypes().add(close);
+        Button closeButton = (Button) editPanel.getDialogPane().lookupButton(close);
+        closeButton.setManaged(false);
+
+        ImageView albumArt = new ImageView(mainSceneController.soundLoader.albumArt);
+        albumArt.setFitHeight(200);
+        albumArt.setFitWidth(200);
+        albumArt.setStyle("-fx-effect: dropshadow(gaussian, rgb(0,0,0,0.5), 10,0.5,-5,+5);");
+
+        JFXButton changeAlbumArt = new JFXButton("Change Album Art");
+        changeAlbumArt.setPrefWidth(180);
+        changeAlbumArt.getStyleClass().add("custom-button-for-change-album-art");
+        changeAlbumArt.setOnAction(e -> {
+            File selctedFile = imageChooser.showOpenDialog(mainStage);
+            if (selctedFile != null) {
+                String str = selctedFile.toURI().toString();
+                selectedAlbumArtPath = selctedFile.toString();
+                Image image = new Image(str);
+                albumArt.setImage(image);
+            }
+        });
+
+        HBox titleBox = new HBox(31);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
+        Label titleLabel = new Label("Song Title:");
+        titleLabel.setPrefWidth(132);
+        titleLabel.setStyle("-fx-font-size: 25px; -fx-font-style: italic;");
+        TextField titleField = new TextField();
+        titleField.setStyle("-fx-font-size: 15px;");
+        titleField.setPromptText(mainSceneController.soundLoader.title);
+        titleField.setPrefWidth(300);
+        titleBox.getChildren().addAll(titleLabel, titleField);
+
+        HBox artistBox = new HBox(16);
+        artistBox.setAlignment(Pos.CENTER_LEFT);
+        Label artistLabel = new Label("Artist Name:");
+        artistLabel.setPrefWidth(148);
+        artistLabel.setStyle("-fx-font-size: 25px; -fx-font-style: italic;");
+        TextField artistField = new TextField();
+        artistField.setStyle("-fx-font-size: 15px;");
+        artistField.setPromptText(mainSceneController.soundLoader.artist);
+        artistField.setPrefWidth(300);
+        artistBox.getChildren().addAll(artistLabel, artistField);
+
+        HBox albumBox = new HBox(10);
+        albumBox.setAlignment(Pos.CENTER_LEFT);
+        Label albumLabel = new Label("Album Name:");
+        albumLabel.setPrefWidth(155);
+        albumLabel.setStyle("-fx-font-size: 25px; -fx-font-style: italic;");
+        TextField albumField = new TextField();
+        albumField.setStyle("-fx-font-size: 15px;");
+        albumField.setPromptText(mainSceneController.soundLoader.album);
+        albumField.setPrefWidth(300);
+        albumBox.getChildren().addAll(albumLabel, albumField);
+
+        JFXButton save = new JFXButton("Save");
+        save.getStyleClass().add("save");
+        save.setPrefSize(150, 40);
+        save.setOnAction(e -> {
+            if (!selectedAlbumArtPath.equals("None") || !newTitleForSong.equals("None") || !newArtistName.equals("None") || !newAlbumName.equals("None")) {
+                boolean action = getSaveConfirmation();
+                if (action) {
+                    boolean songPlayHelper = mainSceneController.isPaused;
+                    helperForPlayPause = true;
+                    mainSceneController.isPlaying = false; // important
+
+                    int index = listView.getSelectionModel().getSelectedIndex();
+                    Duration lastTimeline = mainSceneController.soundLoader.mediaPlayer.getCurrentTime();
+
+                    listView.getSelectionModel().clearSelection();
+
+                    miniPlayPauseController(); // stopping the song before dispose
+                    // Stop and dispose the MediaPlayer.
+                    // Important: MediaPlayer holds a native Windows file handle.
+                    // Even after dispose(), the native handle may stay alive until GC runs.
+                    mainSceneController.soundLoader.mediaPlayer.stop();
+                    mainSceneController.soundLoader.mediaPlayer.dispose();
+
+                    // Force garbage collection to release native file handles immediately.
+                    // Without this, Windows may keep the MP3 file locked for a while.
+                    System.gc();
+
+                    EditAudioTag editAudioTag = new EditAudioTag(mainSceneController.filePath, mainStage);
+
+                    newTitleForSong = titleField.getText();
+                    newArtistName = artistField.getText();
+                    newAlbumName = albumField.getText();
+
+                    if (newTitleForSong.isEmpty() || newTitleForSong.isBlank()) newTitleForSong = "None";
+                    if (newArtistName.isEmpty() || newArtistName.isBlank()) newArtistName = "None";
+                    if (newAlbumName.isEmpty() || newAlbumName.isBlank()) newAlbumName = "None";
+
+                    editAudioTag.setNewSongDetails(selectedAlbumArtPath, newTitleForSong, newArtistName, newAlbumName);
+
+                    Path path = Paths.get(URI.create(mainSceneController.filePath));
+
+                    // Maximum wait of 2 seconds (2000 ms)
+                    long maxWaitMs = 2000;
+                    long start = System.currentTimeMillis();
+
+                    while (isFileLocked(path)) {
+                        if (System.currentTimeMillis() - start > maxWaitMs) {
+                            Alert alert = new Alert(Alert.AlertType.NONE);
+                            alert.initOwner(mainStage);
+                            alert.setTitle("File Error");
+
+                            ImageView errorIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/error.png"))));
+                            errorIcon.setFitHeight(54);
+                            errorIcon.setFitWidth(54);
+                            HBox hBox = new HBox(15);
+                            hBox.setPrefSize(390, 70);
+                            hBox.setPadding(new Insets(20, 0, 0, 20));
+
+                            VBox vBox = new VBox(1);
+                            Label title = new Label("The OS has locked this file!");
+                            title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+                            Label content = new Label("Aborting tag write. Please try again!");
+                            content.setWrapText(true);
+                            content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+
+                            vBox.getChildren().addAll(title, content);
+                            HBox.setMargin(vBox, new Insets(0, 20, 0, 0));
+                            hBox.getChildren().addAll(errorIcon, vBox);
+                            alert.getDialogPane().setContent(hBox);
+                            alert.setHeaderText(null);
+
+                            ButtonType ok = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
+                            alert.getButtonTypes().add(ok);
+
+                            alert.show();
+                            return; // aborting tag write
+                        } // if ends
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException ignored) {
+                        }
+                    } // loop ends
+
+                    editAudioTag.editAndSaveAudioTag(); // this writes tag
+                    objectsOfOpendPlaylist.clear();
+                    loadedPlaylist = "Empty"; // this will ensure the reload playlist
+                    isEditing = true;
+                    loadPlaylist();
+                    listView.getSelectionModel().select(index);
+                    isEditing = false;
+                    mainSceneController.soundLoader.mediaPlayer.setOnReady(() -> {
+                        mainSceneController.soundLoader.mediaPlayer.seek(lastTimeline);
+                    });
+                    if (mainSceneController.isPlaying) {
+                        if (!songPlayHelper) miniPlayPauseController();
+                    } // if ends
+                } // action if ends
+            } // main if ended
+            editPanel.close();
+        }); // save's onAction event ends
+
+        JFXButton cancel = new JFXButton("Cancel");
+        cancel.getStyleClass().add("cancel");
+        cancel.setPrefSize(150, 40);
+        cancel.setOnAction(e -> {editPanel.close();});
+
+        HBox buttonBox = new HBox(50, save, cancel);
+        buttonBox.setAlignment(Pos.CENTER);
+
+        // add key listener
+        titleField.setOnKeyPressed(e -> {
+            if ( titleField.isFocused() && e.getCode() == KeyCode.ENTER && artistField.getText().isEmpty()) {
+                artistField.requestFocus();
+            } else if (titleField.isFocused() && e.getCode() == KeyCode.ENTER && albumField.getText().isEmpty()) {
+                albumField.requestFocus();
+            } else if(titleField.isFocused() && e.getCode() == KeyCode.ENTER && !titleField.getText().isEmpty()) {
+                save.requestFocus();
+            }
+
+            if (titleField.isFocused() && e.getCode() == KeyCode.DOWN) artistField.requestFocus();
+            else if (titleField.isFocused() && e.getCode() == KeyCode.UP) albumField.requestFocus();
+        });
+        artistField.setOnKeyPressed(e -> {
+            if (artistField.isFocused() && e.getCode() == KeyCode.ENTER && albumField.getText().isEmpty()) {
+                albumField.requestFocus();
+            } else if (artistField.isFocused() && e.getCode() == KeyCode.ENTER && titleField.getText().isEmpty()) {
+                titleField.requestFocus();
+            } else if(artistField.isFocused() && e.getCode() == KeyCode.ENTER && !artistField.getText().isEmpty()) {
+                save.requestFocus();
+            }
+
+            if (artistField.isFocused() && e.getCode() == KeyCode.DOWN) albumField.requestFocus();
+            else if (artistField.isFocused() && e.getCode() == KeyCode.UP) titleField.requestFocus();
+        });
+        albumField.setOnKeyPressed(e-> {
+            if (albumField.isFocused() && e.getCode() == KeyCode.ENTER && titleField.getText().isEmpty()) {
+                titleField.requestFocus();
+            } else if (albumField.isFocused() && e.getCode() == KeyCode.ENTER && artistField.getText().isEmpty()) {
+                artistField.requestFocus();
+            } else if(albumField.isFocused() && e.getCode() == KeyCode.ENTER && !albumField.getText().isEmpty()) {
+                save.requestFocus();
+            }
+
+            if (albumField.isFocused() && e.getCode() == KeyCode.DOWN) titleField.requestFocus();
+            else if (albumField.isFocused() && e.getCode() == KeyCode.UP) artistField.requestFocus();
+        });
+
+        VBox.setMargin(buttonBox, new Insets(20, 0, 0 , 0));
+
+        base.getChildren().addAll(albumArt, changeAlbumArt, titleBox, artistBox, albumBox, buttonBox);
+        editPanel.getDialogPane().setContent(base);
+        editPanel.showAndWait();
+    } // method ends
+
+    public boolean getSaveConfirmation() {
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        ImageView confirmIcon = new ImageView(new Image(Objects.requireNonNull(Main.class.getResourceAsStream("/icons/question.png"))));
+        confirmIcon.setFitWidth(54);
+        confirmIcon.setFitHeight(54);
+        alert.setTitle("Save Details");
+        alert.setHeaderText(null);
+        HBox hBox = new HBox(15);
+        hBox.setPadding(new Insets(20, 0,0,20));
+        VBox vBox = new VBox(1);
+        Label title = new Label("Confirm Metadata Save!");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: blue; -fx-font-weight: bold");
+        Label content = new Label("Are you sure you want to save these metadata changes to the file?");
+        content.setStyle("-fx-font-weight: bold; -fx-font-style: italic;");
+        content.setWrapText(true);
+        vBox.getChildren().addAll(title, content);
+
+        hBox.getChildren().addAll(confirmIcon, vBox);
+        hBox.setPrefSize(390,90);
+        alert.getDialogPane().setContent(hBox);
+
+        ButtonType saveButton = new ButtonType("Save Changes", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(saveButton, cancelButton);
+        alert.initOwner(mainStage);
+        return alert.showAndWait().orElse(cancelButton) == saveButton;
+    } // method ends
+
+    private boolean isFileLocked(Path path) {
+        /**
+         * Checks whether a file is locked by any process.
+         *
+         * On Windows, a file cannot be renamed when ANY program has it open
+         * (even for READ access). Since JAudioTagger also renames MP3 files
+         * internally when writing tags, this is the most reliable way to detect locks.
+         *
+         * Files.move(path, temp) -> tries to rename the file.
+         * If it fails: the file is locked.
+         * If it succeeds: the file is fully free to modify.
+         *
+         * The file is renamed back immediately, so nothing changes.
+         */
+        Path temp = path.resolveSibling(path.getFileName() + ".locktest");
+        try {
+            Files.move(path, temp);
+            Files.move(temp, path); // move back
+            return false; // not locked
+        } catch (IOException e) {
+            return true; // locked
+        }
     } // method ends
 
     public void shufflePlaylist() {

@@ -60,7 +60,6 @@ public class AudioDevicePoller extends ScheduledService<String> {
 
         } catch (Exception e) {
             this.deviceName = "Connection Error";
-            //throw new RuntimeException(e);
         }
     } // method ends
 

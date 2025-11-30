@@ -6,6 +6,7 @@ import com.jfoenix.controls.JFXSlider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -18,6 +19,8 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.bootstrapicons.BootstrapIcons;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignM;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignR;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,7 +42,7 @@ public class LyricsController {
     JFXSlider slider;
 
     @FXML
-    JFXButton playAndpause, backward, forward, back, addLyrics, change, remove;
+    JFXButton playAndpause, backward, forward, back, addLyrics, change, remove, seeLyrics;
 
     @FXML
     Label title, artist, liveSeconds, totalSeconds, middleLyrics;
@@ -51,7 +54,7 @@ public class LyricsController {
     Scene mainScene;
     MainSceneController mainSceneController;
     SimpleStringProperty songName, artistName, Lenght, Live, MainLyrics;
-    FontIcon backIcon, changeIcon, removeIcon;
+    FontIcon backIcon, changeIcon, removeIcon, seeIcon;
 
     boolean helperForPlayPause = false;
     boolean lyricsLoaded = false;
@@ -61,7 +64,7 @@ public class LyricsController {
 
     Pattern pattern = Pattern.compile("\\[(\\d{1,2}):(\\d{2})(?:\\.(\\d{1,3}))?\\](.*)");
 
-    List<LyricsLine> lyrics;
+    List<LyricsLine> lyrics, line;
     Map<String, String> lyricsInStored;
     String url = "jdbc:sqlite:" + System.getenv("LOCALAPPDATA") + File.separator + "AmplifyMusic" + File.separator + "appdata.db";
 
@@ -84,6 +87,7 @@ public class LyricsController {
         addLyrics.setOnAction(event -> selectAndAddLyrics());
         change.setOnAction(event -> changeTheLyricsFile());
         remove.setOnAction(event -> removeTheLyricsFile());
+        seeLyrics.setOnAction(event -> showLyrics());
 
         songName = new SimpleStringProperty();
         title.textProperty().bind(songName);
@@ -110,11 +114,18 @@ public class LyricsController {
         removeIcon.setIconSize(15);
         remove.setGraphic(removeIcon);
 
+        seeIcon = new FontIcon(FontAwesomeSolid.EYE);
+        seeIcon.setIconSize(15);
+        seeLyrics.setGraphic(seeIcon);
+
         remove.setVisible(false);
         remove.setDisable(true);
 
         change.setVisible(false);
         change.setDisable(true);
+
+        seeLyrics.setVisible(false);
+        seeLyrics.setDisable(true);
 
         backward.setVisible(false);
         backward.setDisable(true);
@@ -126,6 +137,8 @@ public class LyricsController {
         change.setTooltip(changTip);
         Tooltip removeTip = new Tooltip("Remove Lyrics");
         remove.setTooltip(removeTip);
+        Tooltip seeTip = new Tooltip("See Lyrics");
+        seeLyrics.setTooltip(seeTip);
 
     } // initialize ended
 
@@ -290,6 +303,8 @@ public class LyricsController {
                         change.setVisible(true);
                         remove.setDisable(false);
                         remove.setVisible(true);
+                        seeLyrics.setDisable(false);
+                        seeLyrics.setVisible(true);
 
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -479,10 +494,39 @@ public class LyricsController {
             change.setVisible(false);
             remove.setDisable(true);
             remove.setVisible(false);
+            seeLyrics.setDisable(true);
+            seeLyrics.setVisible(false);
 
         } catch (SQLException | IOException e) {
             throw new RuntimeException(e);
         }
+    } // method ends
+
+    public void showLyrics() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Lyrics");
+        dialog.initOwner(mainStage);
+        ScrollPane base = new ScrollPane();
+        base.setPrefSize(450, 450);
+
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER_LEFT);
+        line = new ArrayList<>(lyrics);
+
+        for (int i = 0; i < line.size() - 1; i++) {
+            Label label = new Label(line.get(i).text);
+            label.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+            label.setWrapText(true);
+            label.setPrefWidth(400);
+            content.getChildren().add(label);
+        } // loop ends
+
+        ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().add(close);
+        base.setContent(content);
+        dialog.getDialogPane().setContent(base);
+        dialog.show();
+        line.clear();
     } // method ends
 
 } // class ends

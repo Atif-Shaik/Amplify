@@ -19,7 +19,7 @@ public class SoundLoader {
     public MediaPlayer mediaPlayer;
     public Media media;
     AudioFile audioFile;
-    public String title, artist;
+    public String title, artist, album;
     String newFilePath;
     public Image albumArt, defaultAlbumArt;
     public ImageView banner;
@@ -55,6 +55,7 @@ public class SoundLoader {
             if (tag != null) {
                 title = tag.getFirst(FieldKey.TITLE);
                 artist = tag.getFirst(FieldKey.ARTIST);
+                album = tag.getFirst(FieldKey.ALBUM);
             } // if ends here
 
             // handle missing title data
@@ -83,7 +84,12 @@ public class SoundLoader {
 
             // handle missing artist name
             if (artist == null || artist.isEmpty() || artist.isBlank()) {
-                artist = "Arist Name";
+                artist = "Unknown Artist";
+            }
+
+            // handling missing album name
+            if (album == null || album.isEmpty() || album.isBlank()) {
+                album = "Unknown Album";
             }
 
         } catch (Exception e) {

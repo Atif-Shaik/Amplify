@@ -434,10 +434,12 @@ public class MainSceneController {
                         }
                         isPaused = true;
                         resetLiveCountSeconds();
+                        if (lyricsController != null) lyricsController.MainLyrics.set(""); // resettng lyrics
                     } // inner 2 if ends
                     if (countLiveSeconds == totalDurationInSeconds && isLooped) { // this if loops the song when on
                         soundLoader.mediaPlayer.seek(Duration.seconds(0));
                         resetLiveCountSeconds();
+                        if (lyricsController != null) lyricsController.MainLyrics.set("");
                     } // inner 3 if ends
                     if (countLiveSeconds == totalDurationInSeconds && isShuffled && opendPlaylist.size() > 1) { // this if shuffles the playlist
                         lastIndex = playlistIndex;
@@ -693,7 +695,7 @@ public class MainSceneController {
                     // this if adds the liked song to the listview if the liked songs list is selected
                     if (playlistController.loadedPlaylist.equals("LIKED SONGS"))  {
                         playlistController.soundLoader.openSong(filePath); // preparing song object
-                        Song song = new Song(playlistController.soundLoader.albumArt, filePath, playlistController.soundLoader.title, playlistController.soundLoader.artist);
+                        Song song = new Song(playlistController.soundLoader.albumArt, filePath, playlistController.soundLoader.title, playlistController.soundLoader.artist, playlistController.soundLoader.album);
                         removedSongObject = song;
                         updateListview = true;
                         tellWhatToDoAddOrRemove = "Add";
@@ -1927,6 +1929,8 @@ public class MainSceneController {
                     lyricsController.change.setVisible(true);
                     lyricsController.remove.setDisable(false);
                     lyricsController.remove.setVisible(true);
+                    lyricsController.seeLyrics.setDisable(false);
+                    lyricsController.seeLyrics.setVisible(true);
                 } else {
                     setLyricsSceneToDefault();
                     deleteLyricsFromDatabase();
@@ -1962,6 +1966,8 @@ public class MainSceneController {
                     lyricsController.change.setVisible(true);
                     lyricsController.remove.setDisable(false);
                     lyricsController.remove.setVisible(true);
+                    lyricsController.seeLyrics.setDisable(false);
+                    lyricsController.seeLyrics.setVisible(true);
                 } else {
                     setLyricsSceneToDefault();
                     deleteLyricsFromDatabase();
@@ -1981,6 +1987,8 @@ public class MainSceneController {
         lyricsController.change.setVisible(false);
         lyricsController.remove.setDisable(true);
         lyricsController.remove.setVisible(false);
+        lyricsController.seeLyrics.setDisable(true);
+        lyricsController.seeLyrics.setVisible(false);
     } // method ends
 
     public void deleteLyricsFromDatabase() {
