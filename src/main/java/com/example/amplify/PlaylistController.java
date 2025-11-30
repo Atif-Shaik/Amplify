@@ -819,12 +819,16 @@ public class PlaylistController {
         save.getStyleClass().add("save");
         save.setPrefSize(150, 40);
         save.setOnAction(e -> {
-            if (!selectedAlbumArtPath.equals("None") || !newTitleForSong.equals("None") || !newArtistName.equals("None") || !newAlbumName.equals("None")) {
+            // getting user input before save
+            newTitleForSong = titleField.getText();
+            newArtistName = artistField.getText();
+            newAlbumName = albumField.getText();
+
+            if (!selectedAlbumArtPath.equals("None") || (!newTitleForSong.isEmpty() && !newTitleForSong.isBlank() && !newTitleForSong.equals("None")) || (!newArtistName.isEmpty() && !newArtistName.isBlank() && !newArtistName.equals("None")) || (!newAlbumName.isEmpty() && !newAlbumName.isBlank() && !newAlbumName.equals("None"))) {
                 boolean action = getSaveConfirmation();
                 if (action) {
                     boolean songPlayHelper = mainSceneController.isPaused;
                     helperForPlayPause = true;
-                    mainSceneController.isPlaying = false; // important
 
                     int index = listView.getSelectionModel().getSelectedIndex();
                     Duration lastTimeline = mainSceneController.soundLoader.mediaPlayer.getCurrentTime();
@@ -843,10 +847,6 @@ public class PlaylistController {
                     System.gc();
 
                     EditAudioTag editAudioTag = new EditAudioTag(mainSceneController.filePath, mainStage);
-
-                    newTitleForSong = titleField.getText();
-                    newArtistName = artistField.getText();
-                    newAlbumName = albumField.getText();
 
                     if (newTitleForSong.isEmpty() || newTitleForSong.isBlank()) newTitleForSong = "None";
                     if (newArtistName.isEmpty() || newArtistName.isBlank()) newArtistName = "None";
@@ -908,6 +908,7 @@ public class PlaylistController {
                     mainSceneController.soundLoader.mediaPlayer.setOnReady(() -> {
                         mainSceneController.soundLoader.mediaPlayer.seek(lastTimeline);
                     });
+
                     if (mainSceneController.isPlaying) {
                         if (!songPlayHelper) miniPlayPauseController();
                     } // if ends
