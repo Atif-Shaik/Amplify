@@ -682,30 +682,30 @@ public class PlaylistController {
                 } else {
                     if (song.getSelectedFilepath() != null) {
                         image = new ImageView(song.art);
-                        image.setFitHeight(90);
-                        image.setFitWidth(90);
+                        image.setFitHeight(70); // 90
+                        image.setFitWidth(70);
                     } else {
                         image.setImage(null);
                     }
                     title = new Label(song.title);
-                    title.setFont(Font.font("Verdana", FontWeight.BOLD, 18));
+                    title.setFont(Font.font("Verdana", FontWeight.BOLD, 16));
 
                     Label t1 = new Label("Artist: ");
-                    t1.setFont(Font.font("Verdana", FontWeight.BOLD,  15));
+                    t1.setFont(Font.font("Verdana", FontWeight.BOLD,  14));
                     artist = new Label(song.artist);
-                    artist.setFont(Font.font("Verdana",  15));
+                    artist.setFont(Font.font("Verdana",  14));
                     HBox artistBox = new HBox(t1, artist);
 
                     Label t2 = new Label("Album: ");
-                    t2.setFont(Font.font("Verdana", FontWeight.BOLD,  15));
+                    t2.setFont(Font.font("Verdana", FontWeight.BOLD,  14));
                     album = new Label(song.album);
-                    album.setFont(Font.font("Verdana",  15));
+                    album.setFont(Font.font("Verdana",  14));
                     HBox albumBox = new HBox(t2, album);
 
                     vBox = new VBox(title, artistBox, albumBox);
 
-                    VBox.setMargin(title, new Insets(10, 0, 0, 0));
-                    VBox.setMargin(artistBox, new Insets(10, 0, 0, 0));
+                    VBox.setMargin(title, new Insets(4, 0, 0, 0));
+                    VBox.setMargin(artistBox, new Insets(6, 0, 0, 0));
 
                     hBox = new HBox(image, vBox);
                     hBox.getStyleClass().add("custom-cell");
