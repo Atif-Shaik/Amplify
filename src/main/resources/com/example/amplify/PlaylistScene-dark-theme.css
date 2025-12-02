@@ -112,6 +112,6 @@
 }
 #listView .list-cell:selected {
     -fx-background: #85adad;
-    -fx-border-color: #334d4d;
+    -fx-border-color: #003333;
 }
 

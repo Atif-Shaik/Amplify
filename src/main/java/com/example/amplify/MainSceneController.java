@@ -490,8 +490,7 @@ public class MainSceneController {
 
         bluetothInfo.setSpacing(5);
         bluetothInfo.getChildren().addAll(bluetooth, bluetoothLabel);
-
-       // loadBluetoohInfo(); // loading bluetooth info
+        bluetothInfo.setVisible(false);
 
        devicePoller = new AudioDevicePoller();
 
