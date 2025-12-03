@@ -574,6 +574,7 @@ public class PlaylistController {
 
     public void showEmptyPlaylistMessage() {
         if (objectsOfOpendPlaylist.isEmpty()) { // checks for empty playlist
+            resetEverythingToDefault();
             Alert alert = new Alert(Alert.AlertType.NONE);
             alert.setTitle("Load Error");
             alert.initOwner(mainStage);
@@ -1377,48 +1378,67 @@ public class PlaylistController {
                         String sql3 = "SELECT file_paths FROM " + playlistName.toLowerCase().replace(" ", "_");
                         String sql4 = "INSERT INTO deleted_songs (file_paths)" +
                                 "VALUES (?);";
+                        List<String> pathsToProcess = new ArrayList<>();
 
                         try (Connection connection = DriverManager.getConnection(url)) {
                             Statement statement = connection.createStatement();
-                            Statement statement1 = connection.createStatement();
 
                             // count the song trace before deleting the playlist table
-                            ResultSet resultSet = statement1.executeQuery(sql3);
+                            ResultSet resultSet = statement.executeQuery(sql3);
                             while (resultSet.next()) {
                                 String path = resultSet.getString("file_paths");
-                                if (mainSceneController.songsInMusicFolder.containsKey(path)) {
-                                    Integer value = mainSceneController.songsInMusicFolder.get(path);
-                                    if (value >= 2) {
-                                        value--;
-                                        mainSceneController.songsInMusicFolder.put(path, value);
-                                        mainSceneController.updateSongsTable(path);
-                                    } else {
-                                        mainSceneController.songsInMusicFolder.remove(path);
-                                        mainSceneController.deleteSongsTableSingleCountSong(path);
+                                pathsToProcess.add(path);
+                            } // loop end
 
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        for (String path: pathsToProcess) {
+                            if (mainSceneController.songsInMusicFolder.containsKey(path)) {
+                                Integer value = mainSceneController.songsInMusicFolder.get(path);
+                                if (value >= 2) {
+                                    value--;
+                                    mainSceneController.songsInMusicFolder.put(path, value);
+                                    mainSceneController.updateSongsTable(path);
+                                } else {
+                                    mainSceneController.songsInMusicFolder.remove(path);
+                                    mainSceneController.deleteSongsTableSingleCountSong(path);
+
+                                    try (Connection connection = DriverManager.getConnection(url)){
                                         PreparedStatement preparedStatement = connection.prepareStatement(sql4);
                                         preparedStatement.setString(1, path);
                                         preparedStatement.executeUpdate();
+                                    } catch (SQLException e) {
+                                        throw new RuntimeException(e);
                                     }
-                                } // if ended
-                            } // loop end
+                                } // else end
+                            } // if ended
+                        } // loop ends
+
+                        try (Connection connection = DriverManager.getConnection(url)){
+                            Statement statement = connection.createStatement();
 
                             PreparedStatement preparedStatement = connection.prepareStatement(sql2);
                             preparedStatement.setString(1, playlistName.toLowerCase().replace(" ", "_"));
 
                             preparedStatement.executeUpdate();
                             statement.execute(sql);
+
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
+
                         if (loadedPlaylist.equals(playlistName)) {
                             objectsOfOpendPlaylist.clear();
                             resetEverythingToDefault();
+                            playlists.getSelectionModel().clearSelection();
                         }
+
                         allPlaylists.getChildren().remove(hBox); // removing playlist option from delete panel
                         playlists.getItems().remove(playlistName); // removing playlist from
 
-                    } // end
+                    } // delete ToDo end
                 }); // delete button onAction ends
 
                 deletButton.getStyleClass().add("transparent-button");
