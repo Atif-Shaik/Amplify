@@ -14,7 +14,7 @@
       <JFXButton fx:id="backward" layoutX="55.0" layoutY="472.0" prefHeight="64.0" prefWidth="64.0" />
       <JFXButton fx:id="forward" layoutX="364.0" layoutY="472.0" prefHeight="64.0" prefWidth="64.0" />
       <JFXButton fx:id="playAndpause" layoutX="177.0" layoutY="440.0" prefHeight="128.0" prefWidth="128.0" />
-      <Label fx:id="title" alignment="CENTER" contentDisplay="CENTER" layoutY="275.0" prefHeight="50.0" prefWidth="500.0" text="(Song Title)" textFill="WHITE">
+      <Label fx:id="title" alignment="CENTER" contentDisplay="CENTER" layoutY="275.0" prefHeight="50.0" prefWidth="500.0" text="(Song Title)" textFill="WHITE" textOverrun="CLIP">
          <font>
             <Font size="36.0" />
          </font>

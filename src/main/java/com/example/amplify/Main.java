@@ -194,7 +194,6 @@ public class Main extends Application {
     @Override
     public void stop() { // this run when the app closes
         mainSceneController.shutdownSleepTimer();
-        mainSceneController.shutdownBluetoothListener();
     } // method ends
 
     public static void main(String[] args) {

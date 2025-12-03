@@ -1,6 +1,6 @@
 package com.example.amplify;
 
-import com.example.bluetooth.AudioDevicePoller;
+
 import com.example.setting.Settings;
 import com.example.sound.Song;
 import com.example.sound.SoundLoader;
@@ -71,8 +71,6 @@ public class MainSceneController {
     JFXToggleButton loop, shuffle;
     @FXML
     AnchorPane mainSceneFXML;
-    @FXML
-    HBox bluetothInfo;
 
     JFXButton volumeButton, sleepButton;
     JFXComboBox<String> minuteSelection;
@@ -97,7 +95,7 @@ public class MainSceneController {
     LyricsController lyricsController;
     ImageView play, back, fast, pause;
     Image art;
-    FontIcon  addSongIcon, playlistIcon, no_speakerIcon, dislikeIcon, setting, muteIcon, likeIcon, volumeIcon, speakerIcon, lyricsIcon, bluetooth;
+    FontIcon  addSongIcon, playlistIcon, no_speakerIcon, dislikeIcon, setting, muteIcon, likeIcon, volumeIcon, speakerIcon, lyricsIcon;
     LinkedList<String> opendPlaylist;
     LinkedList<String> likedList;
     AnchorPane popupContent;
@@ -129,11 +127,9 @@ public class MainSceneController {
     boolean setTimer = false;
     boolean endTrackSelection = false;
     boolean isLyricsSceneCreated = false;
-    boolean showBluetoothInfo = true;
-    boolean turnOffBluetoothUpdate = false;
     Song removedSongObject;
     String tellWhatToDoAddOrRemove;
-    PauseTransition delay, delay1;
+    PauseTransition delay;
 
     ScheduledExecutorService scheduler;// = Executors.newSingleThreadScheduledExecutor();
     ScheduledFuture<?> sleepTask;
@@ -144,8 +140,6 @@ public class MainSceneController {
     LinkedHashMap<String, Integer> songsInMusicFolder;
     FileChooser fileChooser;
     SoundLoader soundLoader;
-    public AudioDevicePoller devicePoller;
-
 
     @FXML
     public void initialize() { // initialize method starts
@@ -176,7 +170,6 @@ public class MainSceneController {
         random = new Random();
         // initialiazing delay
         delay = new PauseTransition(Duration.seconds(3));
-        delay1 = new PauseTransition(Duration.seconds(1));
 
         fileChooser.setTitle("Select an audio file");
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Audio Files","*.mp3", "*.wav", "*.aac"));
@@ -354,11 +347,7 @@ public class MainSceneController {
         delay.setOnFinished(event -> {
             popup.hide(); // hiding popup after 3 seconds
         });
-        delay1.setOnFinished(event -> {
-            if (turnOffBluetoothUpdate == false) {
-                bluetothInfo.setVisible(true);
-            }
-        });
+
         volumeButton.setOnMouseClicked(event -> {delay.stop();delay.play();});
         settings.setOnAction(event -> setSettings());
 
@@ -477,33 +466,6 @@ public class MainSceneController {
         slider.setValue(0);
         openLikedListAndGetSongUsageDetails(); // loading liked song list
 
-        bluetooth = new FontIcon();
-        bluetooth.setIconSize(20);
-        bluetooth.setIconColor(Paint.valueOf("white"));
-
-        bluetoothLabel = new Label();
-        Bluetooth = new SimpleStringProperty("Not connected");
-        bluetoothLabel.textProperty().bind(Bluetooth);
-        bluetoothLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: white;");
-        slider.setOnMouseDragged(e -> {showBluetoothInfo = false; bluetothInfo.setVisible(false); delay1.stop();});
-        slider.setOnMouseReleased(e -> {showBluetoothInfo = true; delay1.play();});
-
-        bluetothInfo.setSpacing(5);
-        bluetothInfo.getChildren().addAll(bluetooth, bluetoothLabel);
-        bluetothInfo.setVisible(false);
-
-       devicePoller = new AudioDevicePoller();
-
-       devicePoller.setOnSucceeded(event -> {
-           String deviceName = devicePoller.getValue();
-           updateBluetoothUI(deviceName);
-       });
-
-       devicePoller.setOnFailed(event -> {
-           Bluetooth.set("Detection Error");
-           devicePoller.getException().printStackTrace();
-       });
-       devicePoller.start();
     } // initialize method ends ****************************************************************************************
 
     public void checkLikedSong() {
@@ -881,14 +843,8 @@ public class MainSceneController {
             isDragging = true;
         });
 
-        slider.setOnMouseDragged(event -> {
-            showBluetoothInfo = false;  bluetothInfo.setVisible(false); delay1.stop();  // this is for hiding bluetooth detail
-        });
-
         slider.setOnMouseReleased(event -> {
             setNewTimeline();
-            showBluetoothInfo = true;
-            delay1.play(); // this is for showing bluetooth detail
         });
     } // method ends
 
@@ -2079,45 +2035,6 @@ public class MainSceneController {
         alertExit.getButtonTypes().setAll(exitButton, cancelButton);
         alertExit.initOwner(stage);
         return alertExit.showAndWait().orElse(cancelButton) == exitButton;
-    } // method ends
-
-    public void updateBluetoothUI(String name) {
-        String deviceName = name.trim().toLowerCase();
-        boolean isBluetooth =
-                deviceName.contains("bluetooth") ||
-                        deviceName.contains("bt") ||
-                        deviceName.contains("a2dp") ||
-                        deviceName.contains("hands-free") ||
-                        deviceName.contains("earbuds") ||
-                        deviceName.contains("headphones");
-        if (isBluetooth) {
-            if (deviceName.contains("headphones")) {
-                bluetooth.setIconCode(MaterialDesignH.HEADPHONES);
-                if (showBluetoothInfo) bluetothInfo.setVisible(true);
-                Bluetooth.set(name);
-                turnOffBluetoothUpdate = false;
-            } else if (deviceName.contains("earbuds")) {
-                bluetooth.setIconCode(BootstrapIcons.EARBUDS);
-                if (showBluetoothInfo) bluetothInfo.setVisible(true);
-                Bluetooth.set(name);
-                turnOffBluetoothUpdate = false;
-            } else {
-                bluetooth.setIconCode(MaterialDesignB.BLUETOOTH);
-                if (showBluetoothInfo) bluetothInfo.setVisible(true);
-                Bluetooth.set(name);
-                turnOffBluetoothUpdate = false;
-            }
-        } else {
-            Bluetooth.set("");
-            bluetothInfo.setVisible(false);
-            turnOffBluetoothUpdate = true;
-        }
-    } // method ends
-
-    public void shutdownBluetoothListener() {
-        if (devicePoller != null) { // this stops the bluetooth lister
-            devicePoller.cancel();
-        }
     } // method ends
 
     public void shutdownSleepTimer() {

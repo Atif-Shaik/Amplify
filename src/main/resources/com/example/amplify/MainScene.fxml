@@ -7,7 +7,6 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.text.Font?>
 
 <AnchorPane fx:id="mainSceneFXML" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.amplify.MainSceneController">
@@ -56,6 +55,5 @@
       <JFXButton fx:id="likeAndDislike" buttonType="RAISED" layoutX="435.0" layoutY="96.0" prefHeight="24.0" prefWidth="24.0" />
       <JFXButton fx:id="settings" buttonType="RAISED" layoutX="435.0" layoutY="142.0" prefHeight="24.0" prefWidth="24.0" />
       <JFXButton fx:id="lyricsAndBanner" buttonType="RAISED" ellipsisString="" layoutX="24.0" layoutY="142.0" prefHeight="24.0" prefWidth="24.0" />
-      <HBox fx:id="bluetothInfo" alignment="BOTTOM_LEFT" layoutX="19.0" layoutY="374.0" prefHeight="25.0" prefWidth="451.0" />
    </children>
 </AnchorPane>
