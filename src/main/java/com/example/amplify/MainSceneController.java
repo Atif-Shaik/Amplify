@@ -1030,11 +1030,12 @@ public class MainSceneController {
             if (filename.endsWith(".mp3") || filename.endsWith(".wav") || filename.endsWith(".asc")) {
                 filePath = selectedFile.toURI().toString();
                 isSongLoaded = true;
-                isExists = true;
+                if (soundLoader.mediaPlayer != null)
+                    soundLoader.mediaPlayer.volumeProperty().unbind(); // unbinding volume property to avoid null pointer before loading new song
                 loadSong();
+                invokeMedia();
                 checkLikedSong();
                 soundLoader.mediaPlayer.setOnReady(this::calculateAndSetLength);
-                invokeMedia();
 
                 if (isShuffled) { // turnig shuffle to off
                     shuffle.setSelected(false);
@@ -1862,7 +1863,7 @@ public class MainSceneController {
     } // method ends
 
     public void sendSongInfoToLyricsScene() {
-        if (isSongLoaded && !opendPlaylist.isEmpty()) { // this still needed
+        if (isSongLoaded || !opendPlaylist.isEmpty()) { // this still needed
             lyricsController.setStage(mainStage);
             lyricsController.setScene(mainScene);
             lyricsController.setTitleName(soundLoader.title);
