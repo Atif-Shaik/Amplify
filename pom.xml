@@ -6,7 +6,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>AmplifyMAX</artifactId>
-    <version>1.0.3.0-SNAPSHOT</version>
+    <version>1.0.4.0-SNAPSHOT</version>
     <name>AmplifyMAX</name>
 
     <repositories>
